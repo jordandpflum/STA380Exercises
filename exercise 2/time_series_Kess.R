@@ -20,17 +20,17 @@ abia$delaytime <- abia$ActualElapsedTime - abia$CRSElapsedTime
 
 #LINE PLOT MONTH VS AVERAGE ARRIVAL DELAY TIME BY AIRLINE -----------------------------DONE 
 AvgArrDelay <- abia %>%
-  group_by(Month, UniqueCarrier) %>%
+  group_by(Month, Airline) %>%
   summarize(avgArrDelay = mean(ArrDelay, na.rm = TRUE))
 #maybe subset for popular airlines
-ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=UniqueCarrier)) +
-  geom_line(aes(color=UniqueCarrier))+
-  geom_point(aes(color=UniqueCarrier))
+ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=Airline)) +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))
 #---------------------------------------------------------------------------------------END
 
-#most popular airlines
-count(abia, vars = UniqueCarrier)
-
-
-
+#most popular airlines (above median)
+commonair <- data.frame(count(abia, vars = Airline))
+airline.counts <- table(abia$Airline)
+barplot(airline.counts, main="Frequency of Airlines",
+        xlab="Airline")
 
