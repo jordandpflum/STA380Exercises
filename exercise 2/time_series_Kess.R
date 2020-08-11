@@ -1,7 +1,10 @@
 library(magrittr)
 library("dplyr")  
 library(ggplot2)
-abia <- read.csv('ABIA.csv')
+abia_orig <- read.csv('ABIA.csv')
+airlinecodes <- read.csv('airline_codes.csv')
+abia <- abia_orig %>% left_join(airlinecodes,by="UniqueCarrier")
+
 
 #MILITARY TIME TO REGULAR AM/PM TIME FORMAT
 military.expected <- abia$CRSArrTime
