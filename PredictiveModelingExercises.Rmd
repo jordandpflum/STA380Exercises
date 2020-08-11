@@ -151,10 +151,10 @@ boxplot(greenBuildings_Ideal$Rent)
 # Box Plot (Non-Green Buildings (Subset): Rent)
 boxplot(nonGreenBuildings_Ideal$Rent)
 
-
 # Rent Comparison
 mean(nonGreenBuildings_Ideal$Rent) - mean(greenBuildings_Ideal$Rent)
 ```
+
 
 
 
@@ -227,8 +227,143 @@ You have broad freedom to look at any variables you'd like here -- try to find t
 
 ## Report
 ```{r exercise2, echo=FALSE, results='hide', message=FALSE, fig.show='hide'}
+library(splitstackshape)
+library(dplyr)
+library(ggmap)
+
+# Load Data
+abiaData <- read.csv('Data/ABIA.csv')
+airportCodes <- read.csv('Data/airportCodes.csv')
+
+# Add Logitude and Latitude to ABIA Dataframe
+
+# Rename Airport Codes iata_code and get unique codes
+abiaDataDestination <- abiaData %>% select(Dest) %>% rename('iata_code' = Dest) %>% distinct()
+abiaDataOrgin <- abiaData %>% select(Origin) %>% rename('iata_code' = Origin) %>% distinct()
+
+# Get destination codes
+abiaDataDestination <- merge(abiaDataDestination, airportCodes, by='iata_code') %>% 
+  distinct(iata_code, .keep_all= TRUE) %>% 
+  select(iata_code, coordinates) 
+
+# Get Orgin Codes
+abiaDataOrgin <- merge(abiaDataOrgin, airportCodes, by='iata_code') %>% 
+  distinct(iata_code, .keep_all= TRUE) %>% 
+  select(iata_code, coordinates)
+
+# Split into Longitude and Latitude (Destination)
+abiaDataDestination <- cSplit(abiaDataDestination, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+  rename('latitude' = coordinates_1,
+         'longitude' = coordinates_2
+         )
+abiaDataDestination$latitude <- as.numeric(abiaDataDestination$latitude)
+abiaDataDestination$longitude <- as.numeric(abiaDataDestination$longitude)
+
+# Split into Longitude and Latitude (Orgin)
+abiaDataOrgin <- cSplit(abiaDataOrgin, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+  rename('latitude' = coordinates_1,
+         'longitude' = coordinates_2
+         )
+abiaDataOrgin$latitude <- as.numeric(abiaDataOrgin$latitude)
+abiaDataOrgin$longitude <- as.numeric(abiaDataOrgin$longitude)
+
+
+# Merge Dataframe back to original dataframe (Desitnation)
+abiaDataDestination <- abiaDataDestination %>% rename('Dest' = iata_code)
+abiaData <- merge(abiaData, abiaDataDestination, by='Dest') %>% rename('Dest_Longitude' = longitude,
+                                                                       'Dest_Latitude' = latitude)
+
+# Merge Dataframe back to original dataframe (Orgina)
+abiaDataOrgin <- abiaDataOrgin %>% rename('Origin' = iata_code)
+abiaData <- merge(abiaData, abiaDataOrgin, by='Origin') %>% rename('Origin_Longitude' = longitude,
+                                                                  'Origin_Latitude' = latitude)
+# Get Density of Departures
+densityOfDepatrues <- abiaData %>% count(Dest)
+abiaData <- merge(abiaData, densityOfDepatrues, by='Dest') %>% rename('Density_Destination' = n)
+
+# Get Density of Arrivals
+densityOfArrivals <- abiaData %>% count(Origin)
+abiaData <- merge(abiaData, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
+
+
+
+
+
+# Mapping
+register_google(key = "AIzaSyDjF7I4JjprxlUM4ZFB_0AScyEME5HsI-s")
+
+usa <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+map <- get_stamenmap(bbox = usa, zoom = 4, maptype = "toner-lite")
 
 ```
+
+```{r exercise2_plot1, echo=FALSE, results='hide', message=FALSE, fig.show='hide'}
+# Number of Depatures per Airport
+numDepatures <- abiaData %>% filter(Dest != 'AUS') %>% 
+  select(Dest, Dest_Longitude, Dest_Latitude, Density_Destination) %>% 
+  group_by(Dest) %>% 
+  summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
+            'latitude' = mean(Dest_Latitude, na.rm = TRUE),
+            'Number_Flight_Depatures' = mean(Density_Destination, na.rm = TRUE)
+            )
+ggmap(map) + geom_point(data=numDepatures, aes(x=longitude, y=latitude, color=Number_Flight_Depatures, size=Number_Flight_Depatures))
+```
+Plots number of depatures from the Austin Airport. Size and color both represent 
+number of flight depatures. Dallas and Houston are the two top airports flights 
+are flown to out of Austin.
+
+```{r exercise2_plot1, echo=FALSE, results='hide', message=FALSE, fig.show='hide'}
+# Number of Arrivals per Airport
+numArrivals <- abiaData %>% filter(Origin != 'AUS') %>% 
+  select(Origin, Origin_Longitude, Origin_Latitude, Density_Arrivals) %>% 
+  group_by(Origin) %>% 
+  summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
+            'latitude' = mean(Origin_Latitude, na.rm = TRUE),
+            'Number_Flight_Arrivals' = mean(Density_Arrivals, na.rm = TRUE)
+            )
+ggmap(map) + geom_point(data=numArrivals, aes(x=longitude, y=latitude, color=Number_Flight_Arrivals, size=Number_Flight_Arrivals))
+```
+Plots number of arrival flights to the Austin Airport. Size and color both represent 
+number of flight arrivals. Dallas and Houston are the two top airports of incoming
+flights to Austin.
+```{r exercise2_plot1, echo=FALSE, results='hide', message=FALSE, fig.show='hide'}
+# Average Arrival Delays per Airport
+arrivalDealysPerAirport <- abiaData %>% filter(Origin != 'AUS') %>% 
+  select(Origin, Origin_Longitude, Origin_Latitude, ArrDelay, Density_Arrivals) %>% 
+  group_by(Origin) %>% 
+  summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
+            'latitude' = mean(Origin_Latitude, na.rm = TRUE),
+            'Arrival_Delay' = mean(ArrDelay, na.rm = TRUE),
+            'Number_of_Flights' = mean(Density_Arrivals, na.rm = TRUE)
+            )
+ggmap(map) + geom_point(data=arrivalDealysPerAirport, aes(x=longitude, y=latitude, color=Arrival_Delay, size=Number_of_Flights))
+```
+
+Maps the average arrival delay for a given airport versus the number of flights 
+incoming to Austin. Austin airport officials should be wary of large cirlces that 
+are lightly shaded, as these are airports which have expected longer delays 
+and have a large number of flights incoming to Austin.
+
+```{r exercise2_plot1, echo=FALSE, results='hide', message=FALSE, fig.show='hide'}
+# Average Departure Delays per Airport
+depatureDealysPerAirport <- abiaData %>% filter(Dest != 'AUS') %>% 
+  select(Dest, Dest_Longitude, Dest_Latitude, DepDelay, Density_Destination) %>% 
+  group_by(Dest) %>% 
+  summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
+            'latitude' = mean(Dest_Latitude, na.rm = TRUE),
+            'Departure_Delay' = mean(DepDelay, na.rm = TRUE),
+            'Number_of_Flights' = mean(Density_Destination, na.rm = TRUE)
+            )
+ggmap(map) + geom_point(data=depatureDealysPerAirport, aes(x=longitude, y=latitude, color=Departure_Delay, size=Number_of_Flights))
+```
+
+Maps the average departure delay for a given airport versus the number of flights 
+departing to that airport from Austin.Thankfully, Austin has a good track record 
+with their large traffic airport destinations.
+
+1. Reason for Delay
+
+2. Do some 
 
 
 # Portfolio Modeling
