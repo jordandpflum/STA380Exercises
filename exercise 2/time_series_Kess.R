@@ -34,3 +34,20 @@ airline.counts <- table(abia$Airline)
 barplot(airline.counts, main="Frequency of Airlines",
         xlab="Airline")
 
+airline.median <- median(commonair$n)
+x.sub <- commonair %>%
+  filter(n >= airline.median)
+airlines <- x.sub$vars
+
+popular.abia <- subset(abia, Airline %in% airlines)
+
+
+AvgArrDelay <- popular.abia %>%
+  group_by(Month, Airline) %>%
+  summarize(avgArrDelay = mean(ArrDelay, na.rm = TRUE))
+#maybe subset for popular airlines
+ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=Airline))+ 
+  scale_fill_brewer(palette="Paired") +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))
+
