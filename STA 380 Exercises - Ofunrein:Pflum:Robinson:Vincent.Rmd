@@ -1,0 +1,39 @@
+---
+title: "PM_Exercises"
+author: "Kessiena Ofunrein"
+date: "8/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Composed By: Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vincent 
+# Question 1
+```{r}
+
+```
+# Question 2
+```{r}
+
+```
+# Question 3
+```{r}
+
+```
+# Question 4
+```{r}
+
+```
+# Question 5
+```{r}
+
+```
+# Question 6
+```{r}
+
+```
+
+
+
+
