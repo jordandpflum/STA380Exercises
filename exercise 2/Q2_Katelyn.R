@@ -202,7 +202,7 @@ ggplot(data = d7, aes(x = reorder(Airline,desc(cancelcount)), y = cancelcount, f
   labs(x = "Airline",y = "Total Cancelled Flights") 
 
 #######################################################################
-# plot avg dep. delay (in minutes) for top 5 airlines (# total flights)
+# plot avg carrier delay (in minutes) for top 5 airlines (# total flights)
 #######################################################################
 
 d9 = abia %>%
@@ -218,7 +218,7 @@ d9 <- as.data.frame(d9)
 d8 = abia %>%
   filter(Airline %in% d9$Airline) %>%
   group_by(Airline,weeknum) %>%
-  summarize(avgdepdelay = mean(DepDelay))
+  summarize(avgcarrdelay = mean(CarrierDelay))
 d8
 
 # set up month breaks in plot
@@ -231,14 +231,14 @@ month_label <- lubridate::month(month, label = TRUE)
 # plot
 ggplot() + 
   # plot individual lines
-  geom_line(data=d8,aes(y=avgdepdelay,x= weeknum,color=Airline))+
+  geom_line(data=d8,aes(y=avgcarrdelay,x= weeknum,color=Airline))+
  # add ticks for months
   scale_x_continuous(breaks = month_numeric, 
                      labels = month_label) +
   # get rid of grey background
   theme_bw() +
   # add title and center
-  ggtitle("Average Dep. Delay (in minutes) for Top 5 Airlines in 2008") +
+  ggtitle("Average Carrier Delay (in minutes) for Top 5 Airlines in 2008") +
   theme(plot.title = element_text(hjust = 0.5)) +
   # add labels
-  labs(x = "2008",y = "Average Dept. Delay (Minutes)")
+  labs(x = "2008",y = "Average Carrier Delay (Minutes)")
