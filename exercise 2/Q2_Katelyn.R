@@ -4,8 +4,9 @@
 
 library(ggmosaic)
 library(ggplot2)
-library(dplyr)
 library(varhandle)
+library(lubridate)
+library(dplyr)
 
 # add column for airline
 airport <- read.csv("C:/Users/katel/OneDrive/Desktop/R/ABIA.csv",header=T, na.strings=c("",NA))
@@ -170,3 +171,74 @@ ggplot() +
                                   "Weather",
                                   "Carrier"))
 
+#######################################################################
+# plot cancellations by type for top 10 airlines (# total flights)
+#######################################################################
+
+d6 = abia %>%
+  group_by(Airline) %>%
+  summarize(count=n(),.groups = 'drop') %>%
+  ungroup() %>%
+  arrange(desc(count)) %>%
+  head(n=10)
+
+d6 <- as.data.frame(d6)
+
+d7 = abia %>%
+  filter(Airline %in% d6$Airline) %>%
+  filter(CancellationCode!= "NA") %>%
+  group_by(Airline, CancellationCode) %>%
+  summarize(cancelcount = sum(Cancelled))
+d7
+
+ggplot(data = d7, aes(x = reorder(Airline,desc(cancelcount)), y = cancelcount, fill = CancellationCode)) + 
+  geom_bar(stat='identity') +
+  # get rid of grey background
+  theme_bw() +
+  # add title and center
+  ggtitle("Cancellations for Top 10 Airlines by Delay Type in 2008") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # add labels
+  labs(x = "Airline",y = "Total Cancelled Flights") 
+
+#######################################################################
+# plot avg dep. delay (in minutes) for top 5 airlines (# total flights)
+#######################################################################
+
+d9 = abia %>%
+  group_by(Airline) %>%
+  summarize(count=n(),.groups = 'drop') %>%
+  ungroup() %>%
+  arrange(desc(count)) %>%
+  head(n=5)
+
+d9 <- as.data.frame(d9)
+
+# group by weeknum, avg delays
+d8 = abia %>%
+  filter(Airline %in% d9$Airline) %>%
+  group_by(Airline,weeknum) %>%
+  summarize(avgdepdelay = mean(DepDelay))
+d8
+
+# set up month breaks in plot
+month <- seq(as.Date("2008-01-01"), 
+             as.Date("2008-12-01"), 
+             by = "1 month")
+month_numeric <- lubridate::yday(month) / 365 * 52 + 1
+month_label <- lubridate::month(month, label = TRUE)
+
+# plot
+ggplot() + 
+  # plot individual lines
+  geom_line(data=d8,aes(y=avgdepdelay,x= weeknum,color=Airline))+
+ # add ticks for months
+  scale_x_continuous(breaks = month_numeric, 
+                     labels = month_label) +
+  # get rid of grey background
+  theme_bw() +
+  # add title and center
+  ggtitle("Average Dep. Delay (in minutes) for Top 5 Airlines in 2008") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # add labels
+  labs(x = "2008",y = "Average Dept. Delay (Minutes)")
