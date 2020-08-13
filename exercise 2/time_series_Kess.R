@@ -28,15 +28,15 @@ ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=Airline)) +
   geom_point(aes(color=Airline))
 #---------------------------------------------------------------------------------------END
 
-#most popular airlines (above median)
+#most popular airlines (above mean)
 commonair <- data.frame(count(abia, vars = Airline)) #df of airlines and frequency in abia data frame
 airline.counts <- table(abia$Airline) #table of counts similar to commonair
 barplot(airline.counts, main="Frequency of Airlines",
         xlab="Airline")
 
-airline.median <- median(commonair$n) #median frequency of airlines in abia
+airline.mean <- mean(commonair$n) #mean frequency of airlines in abia
 x.sub <- commonair %>%
-  filter(n >= airline.median) #data frame of list of airlines who's frequency is > median
+  filter(n >= airline.mean) #data frame of list of airlines who's frequency is > median
 airlines <- x.sub$vars #list of popular airlines
 
 popular.abia <- subset(abia, Airline %in% airlines) #data frame with info for each flight for popular airlines
@@ -93,4 +93,41 @@ ggplot(eAvgArrDelay, aes(x=Month, y=eavgArrDelay, group=Airline))+
   ggtitle("Average Arrival Delay Over Time (Year:2018)") +
   xlab("Airline") + 
   ylab("Average Arrival Delay")
+#---------------------------------------------------------------------------------------END
+
+
+#FILTER OUT SHORT DELAYS AND MOST POPULAR AIRLINES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``
+summary(popular.abia$ArrDelay)
+m<- mean(popular.abia$ArrDelay, na.rm=TRUE) #exclude NA from calculations 
+longARRdelays <-popular.abia %>% filter(ArrDelay > m)
+
+summary(abia$DepDelay)
+n<- mean(popular.abia$DepDelay, na.rm=TRUE) #exclude NA from calculations 
+longDEPdelays <-popular.abia %>% filter(DepDelay > n)
+
+
+#LINE PLOT MONTH VS AVERAGE ARRIVAL DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
+AvgArrDelay <- longARRdelays %>%
+  group_by(Month, Airline) %>%
+  summarize(avgArrDelay = mean(ArrDelay, na.rm = TRUE))
+ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=Airline))+ 
+  scale_fill_brewer(palette="Paired") +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))+ 
+  ggtitle("Average Arrival Delay Over Time (Year:2018)") +
+  xlab("Airline") + 
+  ylab("Average Arrival Delay")
+#---------------------------------------------------------------------------------------END
+
+#LINE PLOT MONTH VS AVERAGE DEPARTURE DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
+AvgDepDelay <- longARRdelays %>%
+  group_by(Month, Airline) %>%
+  summarize(avgDepDelay = mean(DepDelay, na.rm = TRUE))
+ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+ 
+  scale_fill_brewer(palette="Paired") +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))+ 
+  ggtitle("Average Departure Delay Over Time (Year:2018)") +
+  xlab("Airline") + 
+  ylab("Average Departure Delay")
 #---------------------------------------------------------------------------------------END
