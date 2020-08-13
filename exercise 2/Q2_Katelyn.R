@@ -125,7 +125,7 @@ ggplot(data = d3) +
   theme(plot.title = element_text(hjust = 0.5))
 
 #########################################################
-# plot avg delay in minutes over 2008 by the delay types
+# plot avg delay in min. over 2008 by the delay types
 #########################################################
 
 # group by weeknum, avg delays
@@ -159,10 +159,10 @@ ggplot() +
   # get rid of grey background
   theme_bw() +
   # add title and center
-  ggtitle("Average Delay (in minutes) by Delay Type in 2008") +
+  ggtitle("Average Delay (in min.) by Delay Type in 2008") +
   theme(plot.title = element_text(hjust = 0.5)) +
   # add labels
-  labs(x = "2008",y = "Average Delay (Minutes)") +
+  labs(x = "2008",y = "Average Delay (min.)") +
   # add legend
   scale_color_discrete(name = "Delay Type", 
                        labels = c("Security",
@@ -196,13 +196,13 @@ ggplot(data = d7, aes(x = reorder(Airline,desc(cancelcount)), y = cancelcount, f
   # get rid of grey background
   theme_bw() +
   # add title and center
-  ggtitle("Cancellations for Top 10 Airlines by Delay Type in 2008") +
+  ggtitle("Cancellations for Top 10 Airlines by Type in 2008") +
   theme(plot.title = element_text(hjust = 0.5)) +
   # add labels
-  labs(x = "Airline",y = "Total Cancelled Flights") 
+  labs(x = "Airline",y = "Total Cancelled Flights",fill="Cancellation Code") 
 
 #######################################################################
-# plot avg carrier delay (in minutes) for top 5 airlines (# total flights)
+# plot avg carrier delay (in min.) for top 5 airlines (# total flights)
 #######################################################################
 
 d9 = abia %>%
@@ -238,7 +238,7 @@ ggplot() +
   # get rid of grey background
   theme_bw() +
   # add title and center
-  ggtitle("Average Carrier Delay (in minutes) for Top 5 Airlines in 2008") +
+  ggtitle("Average Carrier Delay (in min.) for Top 5 Airlines in 2008") +
   theme(plot.title = element_text(hjust = 0.5)) +
   # add labels
-  labs(x = "2008",y = "Average Carrier Delay (Minutes)")
+  labs(x = "2008",y = "Average Carrier Delay (min.)")
