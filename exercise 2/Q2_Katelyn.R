@@ -91,38 +91,52 @@ cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00",
 # aggregate the data set by more than one factor
 d2 = abia  %>% filter(abia$CancellationCode != 0) %>%
   group_by(CancellationCode, DayOfWeek) %>%
-  summarize(Frequency=n())
+  summarize(numcancels=n()/52)
 
 # plot
 ggplot(data = d2) + 
-  geom_bar(mapping = aes(x=DayOfWeek, y=Frequency, fill=CancellationCode),
+  geom_bar(mapping = aes(x=DayOfWeek, y=numcancels, fill=CancellationCode),
            position="dodge", stat='identity') +
   labs(x = "Weekday", fill = "Cancellation Code") +
   scale_fill_manual(values=cbPalette) +
   theme_bw() +
-  ggtitle("Cancellation Code Frequency by Weekday") +
+  ggtitle("Average Number of Cancelled Flights by Weekday in 2008") +
   # center plot title
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Weekday",y = "Avg # Cancelled Flights")
 
 #########################################################
-# plot cancellation code frequency by month
+# perc cancellations by month
 #########################################################
 
 # aggregate the data set by more than one factor
-d3 = abia %>% filter(abia$CancellationCode != 0) %>%
+d12 = abia %>% filter(abia$CancellationCode != 0) %>%
   group_by(CancellationCode, MonthName) %>%
-  summarize(Frequency=n())
+  summarize(numcancelled=n())
+
+d13 = abia %>%
+  group_by(MonthName) %>%
+  summarize(numflights=n(),.groups = 'drop') %>%
+  ungroup() %>%
+  arrange(desc(numflights))
+
+combo4 <-merge(x=d12,y=d13,by="MonthName",all.x=TRUE)
+combo4$cancperc <- combo4$numcancelled/combo4$numflights
+combo4$numcancelled <- NULL
+combo4$numflights <- NULL
 
 # plot
-ggplot(data = d3) + 
-  geom_bar(mapping = aes(x=MonthName, y=Frequency, fill=CancellationCode),
+ggplot(data = combo4) + 
+  geom_bar(mapping = aes(x=MonthName, y=cancperc, fill=CancellationCode),
            position="dodge", stat='identity') +
   labs(x = "Month", fill = "Cancellation Code") +
   scale_fill_manual(values=cbPalette) +
   theme_bw() +
-  ggtitle("Cancellation Code Frequency by Month") +
+  ggtitle("% Flights Cancelled by Month in 2008") +
   # center plot title
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5))+
+  # add labels
+  labs(x = "2008",y = "% Flights Cancelled")
 
 #########################################################
 # plot avg delay in min. over 2008 by the delay types
@@ -172,7 +186,7 @@ ggplot() +
                                   "Carrier"))
 
 #######################################################################
-# plot cancellations by type for top 10 airlines (# total flights)
+# plot % cancellations by type for top 10 airlines (# sched flights)
 #######################################################################
 
 d6 = abia %>%
@@ -182,24 +196,26 @@ d6 = abia %>%
   arrange(desc(count)) %>%
   head(n=10)
 
-d6 <- as.data.frame(d6)
-
 d7 = abia %>%
   filter(Airline %in% d6$Airline) %>%
   filter(CancellationCode!= "NA") %>%
   group_by(Airline, CancellationCode) %>%
   summarize(cancelcount = sum(Cancelled))
-d7
 
-ggplot(data = d7, aes(x = reorder(Airline,desc(cancelcount)), y = cancelcount, fill = CancellationCode)) + 
+combo3 <-merge(x=d7,y=d6,by="Airline",all.x=TRUE)
+combo3$cancperc <- combo3$cancelcount/combo3$count
+combo3$cancelcount <- NULL
+combo3$count <- NULL
+
+ggplot(data = combo3, aes(x = reorder(Airline,desc(cancperc)), y = cancperc, fill = CancellationCode)) + 
   geom_bar(stat='identity') +
   # get rid of grey background
   theme_bw() +
   # add title and center
-  ggtitle("Cancellations for Top 10 Airlines by Type in 2008") +
+  ggtitle("% Flights Cancelled for Top 10 Airlines in 2008") +
   theme(plot.title = element_text(hjust = 0.5)) +
   # add labels
-  labs(x = "Airline",y = "Total Cancelled Flights",fill="Cancellation Code") 
+  labs(x = "Airline",y = "% Flights Cancelled",fill="Cancellation Code") 
 
 #######################################################################
 # plot avg carrier delay (in min.) for top 5 airlines (# total flights)
