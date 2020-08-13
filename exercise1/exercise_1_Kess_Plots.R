@@ -41,12 +41,16 @@ hist(greenBuildings$Rent, 25, xlab = 'Rent Per Square Foot', main = 'Histogram o
 rent.denplot <- function(df,TITLE){
   attach(df)
   mean.column = mean(df$Rent)
+  mean.data = mean(greenData$Rent)
   graph = df %>%
       ggplot(aes(x=Rent))+
         geom_density(fill="blue",alpha=0.5)+
         scale_x_log10()+
-        geom_vline(xintercept = mean.column,size=1,color="black")+
-        labs(y="Density", title = TITLE)
+        geom_vline(xintercept = mean.column,size=1,color="blue")+
+        geom_vline(xintercept = mean.data,size=1,color="black")+
+        labs(y="Density", title = TITLE)+
+        geom_text(aes(x=mean.column-1, label="Subset", y=1.5), colour="blue", angle=90, text=element_text(size=12)) +
+        geom_text(aes(x=mean.data-1, label="All", y=1.5), colour="black", angle=90, text=element_text(size=12))
   return(graph) 
 }
 rent.denplot(greenBuildings_Ideal, "Density Plot of Ideal Green Building's Rent")
@@ -55,7 +59,7 @@ rent.denplot(nonGreenBuildings_Ideal, "Density Plot of Ideal Non-Green Building'
 #density plot of green and non green on the same graph -------------------------------FIX
 #add mean line of rent from both groups of buildings
 plot(density(greenBuildings_Ideal$Rent), col = "darkgreen", xlab = "Rent Per Square Foot")
-lines(density(nonGreenBuildings_Ideal$Rent),col = "red")
+lines(density(nonGreenBuildings_Ideal$Rent),col = "red",title="Non Green Buildings")
 
 
 
@@ -72,8 +76,6 @@ boxplot(greenBuildings_Ideal$Rent, main="Boxplot of Ideal Green Building Rent", 
 
 # Scatter plot matrix 
 pairs(greenBuildings_Ideal[,3:10], pch = 19, lower.panel = NULL)
-
-
 
 ##ESSENTIALLY THE SAME AS A DENSITY PLOT
 # Histogram (Green Buildings (Subset): Rent)
