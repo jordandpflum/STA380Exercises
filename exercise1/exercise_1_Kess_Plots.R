@@ -1,6 +1,7 @@
 library(mosaic)
 library(dplyr)
 library(ggplot2)
+library(magrittr)
 
 greenData <- read.csv('greenbuildings.csv')
 

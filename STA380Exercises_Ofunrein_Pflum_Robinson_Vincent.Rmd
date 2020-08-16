@@ -14,6 +14,143 @@ Composed By: Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vin
 
 ```
 # Question 2
+The figures below portray a story about the flights arriving in and departing from the Austin Bergstrom International Airport in 2008. We looked at traits of flights and airlines from a few different perspectives to convey an accurate image of what the airport and travelers experienced that year. 
+```{r,include=FALSE}
+###############################################################################
+#set up the data frame and graphs
+#FILES NEEDED IN FOLDER:
+    #ABIA.csv
+    #airline_codes.csv
+###############################################################################3
+# add column for airline
+airport <- read.csv("ABIA.csv",header=T, na.strings=c("",NA))
+airlinecodes <- read.csv("airline_codes.csv")
+abia <- airport %>% left_join(airlinecodes,by="UniqueCarrier")
+
+# replace n/a cells with zero
+abia[is.na(abia)] <- 0
+abia[abia=='NULL'] <- 0
+
+# recode cancellation code
+abia$CancellationCode <- recode(abia$CancellationCode, 
+                                "A"="Carrier",
+                                "B"="Weather",
+                                "C"="NAS")
+
+abia$CancellationCode <- factor(abia$CancellationCode, 
+                                levels= c("Carrier",
+                                          "Weather",
+                                          "NAS"))
+
+# recode days of week
+abia$DayOfWeek <- recode(abia$DayOfWeek, 
+                         "7"="Sunday",
+                         "1"="Monday",
+                         "2"="Tuesday",
+                         "3"="Wednesday",
+                         "4"="Thursday",
+                         "5"="Friday",
+                         "6"="Saturday")
+
+abia$DayOfWeek <- factor(abia$DayOfWeek, 
+                         levels= c("Monday", 
+                                   "Tuesday",
+                                   "Wednesday", 
+                                   "Thursday",
+                                   "Friday", 
+                                   "Saturday", 
+                                   "Sunday"))
+
+# recode months
+abia$MonthName <- recode(abia$Month, 
+                         "1"="Jan",
+                         "2"="Feb",
+                         "3"="Mar",
+                         "4"="April",
+                         "5"="May",
+                         "6"="June",
+                         "7"="July",
+                         "8"="Aug",
+                         "9"="Sept",
+                         "10"="Oct",
+                         "11"="Nov",
+                         "12"="Dec")
+
+abia$MonthName <- factor(abia$MonthName, 
+                         levels= c("Jan",
+                                   "Feb",
+                                   "Mar",
+                                   "April",
+                                   "May",
+                                   "June",
+                                   "July",
+                                   "Aug",
+                                   "Sept",
+                                   "Oct",
+                                   "Nov",
+                                   "Dec"))
+
+# create date column
+abia$date <- as.Date(with(abia, paste(Year, Month, DayofMonth,sep="-")), "%Y-%m-%d")
+abia$weeknum <- isoweek(abia$date)
+
+# set colorblind-friendly palette
+cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+###############################################################################
+#SUBSET                   most popular airlines (above mean)
+commonair <- data.frame(count(abia, vars = Airline)) #df of airlines and frequency in abia data frame
+airline.counts <- table(abia$Airline) #table of counts similar to commonair
+barplot(airline.counts, main="Frequency of Airlines",
+        xlab="Airline")
+
+airline.mean <- mean(commonair$n) #mean frequency of airlines in abia
+x.sub <- commonair %>%
+  filter(n >= airline.mean) #data frame of list of airlines who's frequency is > median
+airlines <- x.sub$vars #list of popular airlines
+
+popular.abia <- subset(abia, Airline %in% airlines) #data frame with info for each flight for popular airlines
+###############################################################################
+#SUBSET                   FILTER OUT SHORT DELAYS AND MOST POPULAR AIRLINES AIRLINES~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``
+summary(popular.abia$ArrDelay)
+m<- mean(popular.abia$ArrDelay, na.rm=TRUE) #exclude NA from calculations 
+longARRdelays <-popular.abia %>% filter(ArrDelay > m)
+
+summary(abia$DepDelay)
+n<- mean(popular.abia$DepDelay, na.rm=TRUE) #exclude NA from calculations 
+longDEPdelays <-popular.abia %>% filter(DepDelay > n)
+```
+
+```{r,include=FALSE} 
+##############################################   GRAPHS   #############################################
+
+#LINE PLOT MONTH VS AVERAGE ARRIVAL DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
+AvgArrDelay <- longARRdelays %>%
+  group_by(Month, Airline) %>%
+  summarize(avgArrDelay = mean(ArrDelay, na.rm = TRUE))
+ggplot(AvgArrDelay, aes(x=Month, y=avgArrDelay, group=Airline))+ 
+  scale_fill_brewer(palette="Paired") +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))+ 
+  ggtitle("Average Arrival Delay Over Time (Year:2018)") +
+  xlab("Airline") + 
+  ylab("Average Arrival Delay")
+#---------------------------------------------------------------------------------------END
+
+#LINE PLOT MONTH VS AVERAGE DEPARTURE DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
+AvgDepDelay <- longARRdelays %>%
+  group_by(Month, Airline) %>%
+  summarize(avgDepDelay = mean(DepDelay, na.rm = TRUE))
+ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+ 
+  scale_fill_brewer(palette="Paired") +
+  geom_line(aes(color=Airline))+
+  geom_point(aes(color=Airline))+ 
+  ggtitle("Average Departure Delay Over Time (Year:2018)") +
+  xlab("Airline") + 
+  ylab("Average Departure Delay")
+#---------------------------------------------------------------------------------------END
+```
+The line graph figures above are a time series analysis of how the length of flight delays changes throughout the year 2018. The graphs are relatively similar and have peaks during similar times. They are separated by arriving and departing flights, essentially whether the plane was late coming in or late coming out. It is to be expected that a change in one would impact an airport’s schedule thus resulting in changes in the other. For both graphs there are peaks in months like March, June, and December. It is easy to deduce the cause of that could be holidays or related to school schedules like Spring Break. For a more concrete picture further analysis should be conducted. The airlines graphed here have more flights than the average airline and the delays are considered long delays because they are in the 75th percentile. 
+
 ```{r}
 
 ```
