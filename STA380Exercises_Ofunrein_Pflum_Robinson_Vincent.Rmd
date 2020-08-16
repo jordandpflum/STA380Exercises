@@ -1,6 +1,6 @@
 ---
-title: "PM_Exercises"
-author: "Kessiena Ofunrein"
+title: "Predictive Modeling Exercises"
+author: "Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vincent"
 date: "8/8/2020"
 output: pdf_document
 ---
@@ -8,7 +8,6 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-Composed By: Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vincent 
 # Question 1
 ```{r,include=FALSE}
 
@@ -16,6 +15,12 @@ Composed By: Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vin
 # Question 2
 The figures below portray a story about the flights arriving in and departing from the Austin Bergstrom International Airport in 2008. We looked at traits of flights and airlines from a few different perspectives to convey an accurate image of what the airport and travelers experienced that year. 
 ```{r,include=FALSE}
+library(magrittr)
+library(ggplot2)
+library(ggmosaic)
+library(varhandle)
+library(lubridate)
+library(dplyr)
 ###############################################################################
 #set up the data frame and graphs
 #FILES NEEDED IN FOLDER:
@@ -120,8 +125,8 @@ n<- mean(popular.abia$DepDelay, na.rm=TRUE) #exclude NA from calculations
 longDEPdelays <-popular.abia %>% filter(DepDelay > n)
 ```
 
-```{r,include=FALSE} 
-##############################################   GRAPHS   #############################################
+```{r, echo=FALSE} 
+##############################    LINE GRAPHS   ##############################
 
 #LINE PLOT MONTH VS AVERAGE ARRIVAL DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
 AvgArrDelay <- longARRdelays %>%
@@ -150,8 +155,8 @@ ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+
 #---------------------------------------------------------------------------------------END
 ```
 The line graph figures above are a time series analysis of how the length of flight delays changes throughout the year 2018. The graphs are relatively similar and have peaks during similar times. They are separated by arriving and departing flights, essentially whether the plane was late coming in or late coming out. It is to be expected that a change in one would impact an airport’s schedule thus resulting in changes in the other. For both graphs there are peaks in months like March, June, and December. It is easy to deduce the cause of that could be holidays or related to school schedules like Spring Break. For a more concrete picture further analysis should be conducted. The airlines graphed here have more flights than the average airline and the delays are considered long delays because they are in the 75th percentile. 
-
 ```{r}
+##############################    GEO PLOT   ##############################
 
 ```
 # Question 3
