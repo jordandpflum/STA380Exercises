@@ -3,58 +3,58 @@ library(dplyr)
 library(ggmap)
 
 # Load Data
-abiaData <- read.csv('ABIA.csv')
+abia <- read.csv('ABIA.csv')
 airportCodes <- read.csv('airportCodes.csv')
 
 # Add Logitude and Latitude to ABIA Dataframe
 
 # Rename Airport Codes iata_code and get unique codes
-abiaDataDestination <- abiaData %>% select(Dest) %>% rename('iata_code' = Dest) %>% distinct()
-abiaDataOrgin <- abiaData %>% select(Origin) %>% rename('iata_code' = Origin) %>% distinct()
+abiaDestination <- abia %>% select(Dest) %>% rename('iata_code' = Dest) %>% distinct()
+abiaOrgin <- abia %>% select(Origin) %>% rename('iata_code' = Origin) %>% distinct()
 
 # Get destination codes
-abiaDataDestination <- merge(abiaDataDestination, airportCodes, by='iata_code') %>% 
+abiaDestination <- merge(abiaDestination, airportCodes, by='iata_code') %>% 
   distinct(iata_code, .keep_all= TRUE) %>% 
   select(iata_code, coordinates) 
 
 # Get Orgin Codes
-abiaDataOrgin <- merge(abiaDataOrgin, airportCodes, by='iata_code') %>% 
+abiaOrgin <- merge(abiaOrgin, airportCodes, by='iata_code') %>% 
   distinct(iata_code, .keep_all= TRUE) %>% 
   select(iata_code, coordinates)
 
 # Split into Longitude and Latitude (Destination)
-abiaDataDestination <- cSplit(abiaDataDestination, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+abiaDestination <- cSplit(abiaDestination, 'coordinates', sep=", ", type.convert=FALSE) %>% 
   rename('latitude' = coordinates_1,
          'longitude' = coordinates_2
   )
-abiaDataDestination$latitude <- as.numeric(abiaDataDestination$latitude)
-abiaDataDestination$longitude <- as.numeric(abiaDataDestination$longitude)
+abiaDestination$latitude <- as.numeric(abiaDestination$latitude)
+abiaDestination$longitude <- as.numeric(abiaDestination$longitude)
 
 # Split into Longitude and Latitude (Orgin)
-abiaDataOrgin <- cSplit(abiaDataOrgin, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+abiaOrgin <- cSplit(abiaOrgin, 'coordinates', sep=", ", type.convert=FALSE) %>% 
   rename('latitude' = coordinates_1,
          'longitude' = coordinates_2
   )
-abiaDataOrgin$latitude <- as.numeric(abiaDataOrgin$latitude)
-abiaDataOrgin$longitude <- as.numeric(abiaDataOrgin$longitude)
+abiaOrgin$latitude <- as.numeric(abiaOrgin$latitude)
+abiaOrgin$longitude <- as.numeric(abiaOrgin$longitude)
 
 
 # Merge Dataframe back to original dataframe (Desitnation)
-abiaDataDestination <- abiaDataDestination %>% rename('Dest' = iata_code)
-abiaData <- merge(abiaData, abiaDataDestination, by='Dest') %>% rename('Dest_Longitude' = longitude,
+abiaDestination <- abiaDestination %>% rename('Dest' = iata_code)
+abia <- merge(abia, abiaDestination, by='Dest') %>% rename('Dest_Longitude' = longitude,
                                                                        'Dest_Latitude' = latitude)
 
 # Merge Dataframe back to original dataframe (Orgina)
-abiaDataOrgin <- abiaDataOrgin %>% rename('Origin' = iata_code)
-abiaData <- merge(abiaData, abiaDataOrgin, by='Origin') %>% rename('Origin_Longitude' = longitude,
+abiaOrgin <- abiaOrgin %>% rename('Origin' = iata_code)
+abia <- merge(abia, abiaOrgin, by='Origin') %>% rename('Origin_Longitude' = longitude,
                                                                    'Origin_Latitude' = latitude)
 # Get Density of Departures
-densityOfDepatrues <- abiaData %>% count(Dest)
-abiaData <- merge(abiaData, densityOfDepatrues, by='Dest') %>% rename('Density_Destination' = n)
+densityOfDepatrues <- abia %>% count(Dest)
+abia <- merge(abia, densityOfDepatrues, by='Dest') %>% rename('Density_Destination' = n)
 
 # Get Density of Arrivals
-densityOfArrivals <- abiaData %>% count(Origin)
-abiaData <- merge(abiaData, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
+densityOfArrivals <- abia %>% count(Origin)
+abia <- merge(abia, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
 
 
 
@@ -68,7 +68,7 @@ map <- get_stamenmap(bbox = usa, zoom = 4, maptype = "toner-lite")
 
 
 # Number of Depatures per Airport
-numDepatures <- abiaData %>% filter(Dest != 'AUS') %>% 
+numDepatures <- abia %>% filter(Dest != 'AUS') %>% 
   select(Dest, Dest_Longitude, Dest_Latitude, Density_Destination) %>% 
   group_by(Dest) %>% 
   summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
@@ -79,7 +79,7 @@ ggmap(map) + geom_point(data=numDepatures, aes(x=longitude, y=latitude, color=Nu
 
 
 # Number of Arrivals per Airport
-numArrivals <- abiaData %>% filter(Origin != 'AUS') %>% 
+numArrivals <- abia %>% filter(Origin != 'AUS') %>% 
   select(Origin, Origin_Longitude, Origin_Latitude, Density_Arrivals) %>% 
   group_by(Origin) %>% 
   summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
@@ -90,7 +90,7 @@ ggmap(map) + geom_point(data=numArrivals, aes(x=longitude, y=latitude, color=Num
 
 
 # Average Arrival Delays per Airport
-arrivalDealysPerAirport <- abiaData %>% filter(Origin != 'AUS') %>% 
+arrivalDealysPerAirport <- abia %>% filter(Origin != 'AUS') %>% 
   select(Origin, Origin_Longitude, Origin_Latitude, ArrDelay, Density_Arrivals) %>% 
   group_by(Origin) %>% 
   summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
@@ -101,7 +101,7 @@ arrivalDealysPerAirport <- abiaData %>% filter(Origin != 'AUS') %>%
 ggmap(map) + geom_point(data=arrivalDealysPerAirport, aes(x=longitude, y=latitude, color=Arrival_Delay, size=Number_of_Flights))
 
 # Average Departure Delays per Airport
-depatureDealysPerAirport <- abiaData %>% filter(Dest != 'AUS') %>% 
+depatureDealysPerAirport <- abia %>% filter(Dest != 'AUS') %>% 
   select(Dest, Dest_Longitude, Dest_Latitude, DepDelay, Density_Destination) %>% 
   group_by(Dest) %>% 
   summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
