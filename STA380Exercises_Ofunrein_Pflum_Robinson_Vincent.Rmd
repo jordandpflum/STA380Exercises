@@ -322,7 +322,63 @@ ggmap(map) + geom_point(data=depatureDealysPerAirport, aes(x=longitude, y=latitu
 
 ```
 
+<<<<<<< HEAD
 # Question 3
+=======
+
+```{r}
+#Plot number of delays based on time of day
+
+#Need to change time format
+
+#how do we group the times into bins?
+d3 = abia  %>% filter(DepDelay >=30) %>%
+  group_by(CRSDepTime) %>%
+  summarize(Frequency=n())
+
+ggplot(data = d3) + 
+  geom_bar(mapping = aes(x=CRSDepTime, y=Frequency),
+           position="dodge", stat='identity') +
+  labs(x = "time") +
+  theme_bw() +
+  ggtitle("Delays based on Time of Day") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#plot average delays per time period
+d4 = abia  %>% filter(DepDelay >=30) %>%
+  group_by(CRSDepTime) %>%
+  summarize(numcancels=n()/24)
+
+ggplot(data = d4) + 
+  geom_bar(mapping = aes(x=CRSDepTime, y=numcancels),
+           position="dodge", stat='identity') +
+  labs(x = "time") +
+  theme_bw() +
+  ggtitle("Delays based on Time of Day") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+```{r}
+#plot average delays per time period
+d4 = abia  %>% filter(DepDelay >=30) %>%
+  group_by(CRSDepTime) %>%
+  summarize(numcancels=n()/24)
+
+ggplot(data = d4) + 
+  geom_bar(mapping = aes(x=CRSDepTime, y=numcancels),
+           position="dodge", stat='identity') +
+  labs(x = "time") +
+  theme_bw() +
+  ggtitle("Delays based on Time of Day") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Question 3
+>>>>>>> da5a66e280e3554b06793a8fd9e822ce637b5986
 ```{r}
 
 ```
