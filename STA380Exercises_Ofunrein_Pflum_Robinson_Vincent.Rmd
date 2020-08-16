@@ -3,6 +3,8 @@ title: "Predictive Modeling Exercises"
 author: "Kessiena Ofunrein, Jordan Pflum, Jennifer Robinson, and Katelyn Vincent"
 date: "8/8/2020"
 output: pdf_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +23,7 @@ library(ggmosaic)
 library(varhandle)
 library(lubridate)
 library(dplyr)
-###############################################################################
+#################################   DATE COLUMN & MORE ###########################
 #set up the data frame and graphs
 #FILES NEEDED IN FOLDER:
     #ABIA.csv
@@ -155,7 +157,6 @@ ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+
 #---------------------------------------------------------------------------------------END
 ```
 As we transition our focus from how flights are delayed for longer periods of time seasonally, we can also look at the different types of cancellations and delays. The graph below enables us to compare three types of cancellation codes: Carrier, Weather, and NAS. This plot is clearly able to show that NAS delays do not account for many delays and truly do not compare to weather or carrier delays. 
-
 ```{r, echo=FALSE}
 # aggregate the data set by more than one factor
 d2 = abia  %>% filter(abia$CancellationCode != 0) %>%
@@ -174,7 +175,7 @@ ggplot(data = d2) +
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(x = "Weekday",y = "Avg # Cancelled Flights")
 ```
-In the graph below, we look at a similar trend but over months so we can look at a seasonal picture of the flights. Some interesting anomalies are found in April and September. Based on knowledge of seasonal changes in weather, one could conclude that the significant flux in weather delays in September could be explained by hurricane season. As for April, carrier delays could increased significantly by **_______________**. 
+In the graph below, we look at a similar trend but over months so we can look at a seasonal picture of the flights. Some interesting anomalies are found in April and September. Based on knowledge of seasonal changes in weather, one could conclude that the significant flux in weather delays in September could be explained by hurricane season. As for April, carrier delays could increased significantly because American Airlines canceled a lot of flights due to not meeting government regulation standards. 
 ```{r,echo=FALSE}
 # aggregate the data set by more than one factor
 d12 = abia %>% filter(abia$CancellationCode != 0) %>%
@@ -206,11 +207,121 @@ ggplot(data = combo4) +
   labs(x = "2008",y = "% Flights Cancelled")
 
 ```
-Strategic planning is a fundamental component of how airports sustain themselves. Knowing that an airport or region is notorious for delays or that they are notorious for this seasonally, plans can be made to accommodate to yield the best options for travelers. A simple way to summarize this information in a plot is through geographical mapping. Figure ___ shows this. An airport official should be concerned about a large dot that is lightly shaded, as this airport has a lot of flights outgoing to the Austin airport and are often delayed.
-```{r}
+Strategic planning is a fundamental component of how airports sustain themselves. Knowing that an airport or region is notorious for delays or that they are notorious for this seasonally, plans can be made to accommodate to yield the best options for travelers. A simple way to summarize this information in a plot is through geographical mapping. Figure ___ shows this; airports with larger volumes of flights arriving in or departing from Austin have larger and brighter circles. An airport official should show more concern for a large dot that is lightly shaded, as this airport has a lot of flights outgoing to the Austin airport so schedules in these airports are integral to an efficient airport.
+```{r,include=FALSE}
+library(splitstackshape)
+library(ggmap)
+# Load Data
+abia <- read.csv('ABIA.csv')
+airportCodes <- read.csv('airportCodes.csv')
+
+# Rename Airport Codes iata_code and get unique codes
+abiaDestination <- abia %>% select(Dest) %>% rename('iata_code' = Dest) %>% distinct()
+abiaOrgin <- abia %>% select(Origin) %>% rename('iata_code' = Origin) %>% distinct()
+
+# Get destination codes
+abiaDestination <- merge(abiaDestination, airportCodes, by='iata_code') %>% 
+  distinct(iata_code, .keep_all= TRUE) %>% 
+  select(iata_code, coordinates) 
+
+# Get Orgin Codes
+abiaOrgin <- merge(abiaOrgin, airportCodes, by='iata_code') %>% 
+  distinct(iata_code, .keep_all= TRUE) %>% 
+  select(iata_code, coordinates)
+
+# Split into Longitude and Latitude (Destination)
+abiaDestination <- cSplit(abiaDestination, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+  rename('latitude' = coordinates_1,
+         'longitude' = coordinates_2
+  )
+abiaDestination$latitude <- as.numeric(abiaDestination$latitude)
+abiaDestination$longitude <- as.numeric(abiaDestination$longitude)
+
+# Split into Longitude and Latitude (Orgin)
+abiaOrgin <- cSplit(abiaOrgin, 'coordinates', sep=", ", type.convert=FALSE) %>% 
+  rename('latitude' = coordinates_1,
+         'longitude' = coordinates_2
+  )
+abiaOrgin$latitude <- as.numeric(abiaOrgin$latitude)
+abiaOrgin$longitude <- as.numeric(abiaOrgin$longitude)
+
+
+# Merge Dataframe back to original dataframe (Desitnation)
+abiaDestination <- abiaDestination %>% rename('Dest' = iata_code)
+abia <- merge(abia, abiaDestination, by='Dest') %>% rename('Dest_Longitude' = longitude,
+                                                                       'Dest_Latitude' = latitude)
+
+# Merge Dataframe back to original dataframe (Orgina)
+abiaOrgin <- abiaOrgin %>% rename('Origin' = iata_code)
+abia <- merge(abia, abiaOrgin, by='Origin') %>% rename('Origin_Longitude' = longitude,
+                                                                   'Origin_Latitude' = latitude)
+# Get Density of Departures
+densityOfDepatrues <- abia %>% count(Dest)
+abia <- merge(abia, densityOfDepatrues, by='Dest') %>% rename('Density_Destination' = n)
+
+# Get Density of Arrivals
+densityOfArrivals <- abia %>% count(Origin)
+abia <- merge(abia, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
+```
+
+```{r,echo=FALSE}
 ##############################    GEO PLOT   ##############################
+#######################    DEPARTURES PER AIRPORT   ########################
+
+# Mapping
+register_google(key = "AIzaSyDjF7I4JjprxlUM4ZFB_0AScyEME5HsI-s")
+
+usa <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+map <- get_stamenmap(bbox = usa, zoom = 4, maptype = "toner-lite")
+
+
+# Number of Depatures per Airport
+numDepatures <- abia %>% filter(Dest != 'AUS') %>% 
+  select(Dest, Dest_Longitude, Dest_Latitude, Density_Destination) %>% 
+  group_by(Dest) %>% 
+  summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
+            'latitude' = mean(Dest_Latitude, na.rm = TRUE),
+            'Number_Flight_Depatures' = mean(Density_Destination, na.rm = TRUE)
+  )
+ggmap(map) + geom_point(data=numDepatures, aes(x=longitude, y=latitude, color=Number_Flight_Depatures, size=Number_Flight_Depatures))
+
+# Number of Arrivals per Airport
+numArrivals <- abia %>% filter(Origin != 'AUS') %>% 
+  select(Origin, Origin_Longitude, Origin_Latitude, Density_Arrivals) %>% 
+  group_by(Origin) %>% 
+  summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
+            'latitude' = mean(Origin_Latitude, na.rm = TRUE),
+            'Number_Flight_Arrivals' = mean(Density_Arrivals, na.rm = TRUE)
+  )
+ggmap(map) + geom_point(data=numArrivals, aes(x=longitude, y=latitude, color=Number_Flight_Arrivals, size=Number_Flight_Arrivals))
 
 ```
+Now that we have an understanding of where the most frequented airports are, we can now look at a similar map that tells us how timely these airports' flights are. Similar to the most frequented locations, in the graphs below we see the locations with the most airports still have larger circles, but lighter colors represent longer delays on average for the year. We know from previous graphs the length of delays is somewhat seasonal, but on average we see that the more frequented airports do not have relatively long delays. We actually notice in states like Iowa there is not a lot of flights from here but they have a significantly higher average length of delay. We see something similar for flights arriving in Tennessee. 
+```{r,echo=FALSE}
+# Average Arrival Delays per Airport
+arrivalDealysPerAirport <- abia %>% filter(Origin != 'AUS') %>% 
+  select(Origin, Origin_Longitude, Origin_Latitude, ArrDelay, Density_Arrivals) %>% 
+  group_by(Origin) %>% 
+  summarize('longitude' = mean(Origin_Longitude, na.rm = TRUE),
+            'latitude' = mean(Origin_Latitude, na.rm = TRUE),
+            'Arrival_Delay' = mean(ArrDelay, na.rm = TRUE),
+            'Number_of_Flights' = mean(Density_Arrivals, na.rm = TRUE)
+  )
+ggmap(map) + geom_point(data=arrivalDealysPerAirport, aes(x=longitude, y=latitude, color=Arrival_Delay, size=Number_of_Flights))
+
+# Average Departure Delays per Airport
+depatureDealysPerAirport <- abia %>% filter(Dest != 'AUS') %>% 
+  select(Dest, Dest_Longitude, Dest_Latitude, DepDelay, Density_Destination) %>% 
+  group_by(Dest) %>% 
+  summarize('longitude' = mean(Dest_Longitude, na.rm = TRUE),
+            'latitude' = mean(Dest_Latitude, na.rm = TRUE),
+            'Departure_Delay' = mean(DepDelay, na.rm = TRUE),
+            'Number_of_Flights' = mean(Density_Destination, na.rm = TRUE)
+  )
+ggmap(map) + geom_point(data=depatureDealysPerAirport, aes(x=longitude, y=latitude, color=Departure_Delay, size=Number_of_Flights))
+
+```
+
 # Question 3
 ```{r}
 
