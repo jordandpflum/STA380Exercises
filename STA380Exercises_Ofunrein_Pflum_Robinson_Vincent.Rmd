@@ -8,13 +8,213 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,fig.width=5, fig.height=2)
+knitr::opts_chunk$set(echo = TRUE,fig.width=5, fig.height=2.5)
 ```
-# Question 1
+# Question 1 DONE
 ```{r,include=FALSE}
+# get rid of scientific notation
+options(scipen=999)
+
+# read in data set
+greenData <- read.csv("greenbuildings.csv")
+
+# separate into green and non-green buildings
+greenBuildings <- greenData %>% filter(green_rating == 1)
+nonGreenBuildings <- greenData %>% filter(green_rating == 0)
+
+# create subset of similar buildings based on what we know:
+# mixed use building so look at buildings with amenities = 1
+# new building so filter on buildings <10 yrs or renovated
+# 15 stories so filter on buildings between 10-20 stories
+# Austin, TX so filter on buildings with num cooling days > median of 966
+
+subset_All <- greenData %>% filter(amenities==1,
+                                   cd_total_07>=966,
+                                   stories<=20,
+                                   stories>=10,
+                                   age<=10 | renovated==1)
+
+subset_Green <- subset_All %>% filter(green_rating==1)
+subset_Nongreen <- subset_All %>% filter(green_rating==0)
+```
+Though potentially accurate in their findings, the conclusions of the initial analysis regarding the economic viability of “going green” were based on flawed logic.  The employee filtered out buildings with occupancy rates of less than ten percent, assuming that the occupancy rate for the new building will be over ten percent without providing evidence to support his theory.  To strengthen his argument, he could have used a visual like the one below, which shows the leasing rates by size for all of the buildings in the data set.  Based on this, it appears that there are in fact no ‘green’ buildings in the data set with leasing rates (aka occupancy rates) lower than 10%. 
+```{r}
+#####################################################
+# plot leasing rate vs size, all data
+#####################################################
+
+# plot leasing rate vs size (all data)
+ggplot(data = greenData) + 
+  geom_point(aes(x = leasing_rate, y = size, color=factor(green_rating))) +
+  labs(color = "Green Building") +
+  # add colors and legend labels
+  scale_colour_manual(values = c("#01148A","#0AD626"),labels = c("No","Yes")) +
+  ggtitle("Leasing Rate vs. Size") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5))+
+  labs(x = "Leasing Rate",y = "Size (Sq. ft)")
+```
+While the idea of filtering the dataset is a good one, the filtering approach did not take into account the information that is known about the new project - that it will be a 15-story mixed-use building in Austin, TX measuring 250,000 sq. ft.  This information, though limited, allows us to narrow our focus to buildings with similar properties.  For example, we created a subset of the data that contained information about buildings that: were between 10-20 stories, were either less than 10 years old or had been renovated, had amenities (since the building will be mixed-use), and had annual cooling degree days over 966 (the median for the whole dataset).  Since there were no variables directly related to location, we used high cooling degree days to filter on locations in similar climates to Austin, TX (if not similar geographic regions).  This subset contained 407 buildings, including 33 designated as ‘green buildings’.  
+Subsetting the data yields different information about the rent of green vs non-green buildings.  Below is the rent distribution for all buildings in the dataset, which would seem to support the original analysis.
+
+```{r}
+#####################################################
+# distribution of rental prices, all buildings
+#####################################################
+
+plot(density(greenBuildings$Rent), main="Rent Distribution, All Buildings", ylim=c(0,.045), col = "#0AD626", xlab = "Rent Per Square Foot")
+lines(density(nonGreenBuildings$Rent),col = "#01148A")
+legend(100, .035, legend=c("Green", "Not Green"),
+       col=c("#0AD626", "#01148A"), lty=1:2, cex=0.8)
+```
+However, when analyzing green buildings in the subset of data (containing information on buildings similar to the new one), it appears that the rent distribution skews slightly more towards less expensive rental prices.  
+
+```{r}
+# green buildings compared (all to subset)
+plot(density(greenBuildings$Rent), main="Rent Distribution, Green Buildings", ylim=c(0,.06), xlim=c(0,100), col = "#69E878", xlab = "Rent Per Square Foot")
+lines(density(subset_Green$Rent),col = "#155B2F")
+legend(70, .05, legend=c("All Data", "Subset"),
+       col=c("#69E878", "#155B2F"), lty=1:2, cex=0.8)
+```
+The median rent for green buildings in the subset is 24.36 dollars vs 22.50 dollars, this is still higher, but both are significantly less than the rental prices in the original analysis.  
+```{r}
+#####################################################
+# plot dist. of rent prices for subset
+#####################################################
+green.denplot <- function(df,TITLE){
+  attach(df)
+  median.column = round(median(df$Rent),digits=2)
+  graph = df %>%
+    ggplot(aes(x=Rent))+
+    geom_density(fill="#0AD626",alpha=0.5)+
+    scale_x_log10()+
+    geom_vline(xintercept = median.column,size=1,color="black")+
+    geom_label(aes(x = median.column, y = 0.5, label = paste("Median Rent: $", median.column)), fill = "white")+
+    labs(y="Density", x ="Rent Per Sq.Ft.", title = TITLE) +
+    theme(plot.title = element_text(hjust = 0.5))
+  return(graph) 
+}
+
+green.denplot(subset_Green, "Rent Distribution (Subset, Green Buildings)")
+
+nongreen.denplot <- function(df,TITLE){
+  attach(df)
+  median.column = round(median(df$Rent),digits=2)
+  graph = df %>%
+    ggplot(aes(x=Rent))+
+    geom_density(fill="#01148A",alpha=0.5)+
+    scale_x_log10()+
+    geom_vline(xintercept = median.column,size=1,color="black")+
+    geom_label(aes(x = median.column, y = 0.5, label = paste("Median Rent: $", median.column)), fill = "white")+
+    labs(y="Density", x ="Rent Per Sq.Ft.", title = TITLE) +
+    theme(plot.title = element_text(hjust = 0.5))
+  return(graph) 
+}
+
+nongreen.denplot(subset_Nongreen, "Rent Distribution (Subset, Non-Green Buildings)")
+```
+Additionally, while the original analysis factored in expected revenue differences, it failed to account for differences in electricity cost savings over the year from “going green”.  Only three percent of all buildings (and six percent of green buildings) in the original dataset have rent quoted on a “net contract” basis, where the tenant pays for utility costs, which means that the majority of utility costs are paid by the building owners.  
+Estimated annual electricity costs for a non-green building were computed using the building size (250,000 sq ft), avg number of kWh per square foot for commercial buildings (22.5), and median electricity costs for buildings in the subset.  The annual electricity costs for the green building assumed a 25% reduction in energy usage.  To compute revenue, the median occupancy rate was multiplied by the median rent (for green and non-green buildings in the subset, separately).  Below is the break-even analysis for a new green building, which takes into account the difference in costs and expected revenues compared to the construction of a non-green building.  Based on this analysis, the additional costs of the green building would be recouped in 9.5 years.
+```{r}
+#####################################################
+# plot break even analysis
+#####################################################
+
+# fixed costs
+fixed_cost <- 5000000
+
+# annual electricity costs
+# average kwh for commercial buildings is 22.5
+# https://www.iotacommunications.com/blog/benchmarking-commercial-building-energy-use-per-square-foot/#:~:text=According%20to%20the%20Department%20of,are%20consumed%20by%20refrigeration%20%26%20equipment.
+annual_kwh_persqf <- 22.5
+building_size_sqf <- 250000
+elec_cost <- median(subset_All$Electricity_Costs)
+ann_elec_usage_other <- annual_kwh_persqf*building_size_sqf
+ann_elec_costs_other <- ann_elec_usage_other*elec_cost
+# average 25% reduction in energy usage for green buildings
+# https://www.iotacommunications.com/blog/green-building-benefits/
+ann_elec_usage_green <- ann_elec_usage_other*0.75
+ann_elec_costs_green <- ann_elec_usage_green*elec_cost
+delta_elec_costs <- ann_elec_costs_green - ann_elec_costs_other
+
+# annual revenue
+occ_rate_other <- median(subset_Nongreen$leasing_rate)/100
+rent_other <- median(subset_Nongreen$Rent)
+ann_revenue_other <- building_size_sqf*occ_rate_other*rent_other
+occ_rate_green <- median(subset_Green$leasing_rate)/100
+rent_green <- median(subset_Green$Rent)
+ann_revenue_green <- building_size_sqf*occ_rate_green*rent_green
+delta_revenue <- ann_revenue_green - ann_revenue_other
+
+years <- c(seq(0, 15))
+fixed_cost <- c(rep(5000000, length(years)))
+variable_cost <- delta_elec_costs*years
+total_cost <- fixed_cost + variable_cost
+revenue <- delta_revenue*years
+contribution_margin <- delta_revenue - delta_elec_costs
+break_even_years <- round(fixed_cost[1]/contribution_margin,digits=1)
+breakeven <- data.frame(years, fixed_cost, variable_cost, total_cost, revenue)
+
+# plot break-even analysis
+ggplot(data = breakeven, aes(x = years)) +
+  geom_line(aes(y = fixed_cost,
+                col = "Fixed Cost")) +
+  geom_line(aes(y = variable_cost,
+                col = "Variable Cost")) +
+  geom_line(aes(y = total_cost,
+                col = "Total Cost")) +
+  geom_line(aes(y = revenue,
+                col = "Revenue")) +
+  geom_segment(aes(x = break_even_years, xend = break_even_years, 
+                   y = 0, yend = break_even_years*delta_revenue),
+               linetype = "dashed") +
+  geom_segment(aes(x = 0, xend = break_even_years, 
+                   y = break_even_years*delta_revenue, yend = break_even_years*delta_revenue),
+               linetype = "dashed") +
+  geom_point(aes(x = break_even_years, 
+                 y= break_even_years*delta_revenue), 
+             colour = "black", size = 4) +
+  annotate("text", x = break_even_years, y = 0, label = paste("Break Even Point:", break_even_years,"years")) +
+  scale_color_manual(labels = c("Fixed Cost", "Delta Revenue", "Total Cost", "Delta Variable Cost"),
+                     values = c("Fixed Cost" = "black", "Variable Cost" = "blue", "Total Cost" = "red", "Revenue" = "green")) +
+  geom_ribbon(data = breakeven[breakeven$total_cost >= breakeven$revenue, ], aes(x = years, ymin = revenue, ymax = total_cost), fill = "red", alpha = 0.15) +
+  geom_ribbon(data = breakeven[breakeven$total_cost <= breakeven$revenue, ], aes(x = years, ymin = total_cost, ymax = revenue), fill = "green", alpha = 0.15) +
+  labs(title = "Break-Even Analysis (Green Building)",
+       x = "Year",
+       y = "Dollars",
+       color = NULL) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_y_continuous(labels=scales::dollar_format())
+```
+One possible confounding variable for the relationship between rent and green status in the initial analysis could be the building class.  Almost 80% of all green buildings are Class A buildings, which are the highest quality buildings in a market, whereas only 36% of non-green buildings have a Class A designation.  Since Class A buildings command a much higher rent than other building types, what appeared to be a higher rent for ‘green’ buildings could be attributed to the fact that most of them are of a higher quality building type.  
+```{r}
+#####################################################
+# plot rent distribution for class a buildings (all)
+#####################################################
+
+classABuildings <- greenData %>% filter(class_a == 1)
+otherClassBuildings <- greenData %>% filter(class_a == 0)
+
+classa.denplot <- function(df,TITLE){
+  attach(df)
+  median.column = round(median(df$Rent),digits=2)
+  graph = df %>%
+    ggplot(aes(x=Rent))+
+    geom_density(fill="#45CCE4",alpha=0.5)+
+    scale_x_log10()+
+    geom_vline(xintercept = median.column,size=1,color="black")+
+    geom_label(aes(x = median.column, y = 0.5, label = paste("Median Rent: $", median.column)), fill = "white")+
+    labs(y="Density", x ="Rent Per Sq.Ft.", title = TITLE) +
+    theme(plot.title = element_text(hjust = 0.5))
+  return(graph) 
+}
+
+classa.denplot(classABuildings, "Rent Distribution (All Class A Buildings)")
+classa.denplot(otherClassBuildings, "Rent Distribution (All Non-Class A Buildings)")
 
 ```
-# Question 2
+
+# Question 2 DONE
 The figures below portray a story about the flights arriving in and departing from the Austin Bergstrom International Airport in 2008. We looked at traits of flights and airlines from a few different perspectives to convey an accurate image of what the airport and travelers experienced that year. This analysis of the data is extremely useful for a few different potential clients. Firstly, travelers are the sustenance of this industry and are impacted by the factors we are analyzing. By providing them with some of these graphs, travelers will be more informed about some things they are likely to experience temporally, geographically, or with a specific airline. Secondly, airport officials would benefit greatly from our analysis because it is advantageous to know what one is likely to experience with each airport. Airports are businesses with reputations and standards. Notoriety for delayed flights is very useful information for preparations and strategic planning. 
 ```{r,include=FALSE}
 library(magrittr)
@@ -127,7 +327,7 @@ n<- mean(popular.abia$DepDelay, na.rm=TRUE) #exclude NA from calculations
 longDEPdelays <-popular.abia %>% filter(DepDelay > n)
 ```
 The line graph figures below are a time series analysis of how the length of flight delays changes throughout the year 2018. The graphs are relatively similar and have peaks during similar times. They are separated by arriving and departing flights, essentially whether the plane was late coming in or late coming out. It is to be expected that a change in one would impact an airport’s schedule thus resulting in changes in the other. For both graphs there are peaks in months like March, June, and December. It is easy to deduce the cause of that could be holidays or related to school schedules like Spring Break. For a more concrete picture further analysis should be conducted. The airlines graphed here have more flights than the average airline and the delays are considered long delays because they are in the 75th percentile. 
-```{r, echo=FALSE} 
+```{r,fig.align='center', echo=FALSE} 
 ##############################    LINE GRAPHS   ##############################
 
 #LINE PLOT MONTH VS AVERAGE ARRIVAL DELAY TIME BY AIRLINE FOR POPULAR AIRLINES -----------------------------DONE 
@@ -157,7 +357,7 @@ ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+
 #---------------------------------------------------------------------------------------END
 ```
 As we transition our focus from how flights are delayed for longer periods of time seasonally, we can also look at the different types of cancellations and delays. The graph below enables us to compare three types of cancellation codes: Carrier, Weather, and NAS. This plot is clearly able to show that NAS delays do not account for many delays and truly do not compare to weather or carrier delays. 
-```{r, echo=FALSE}
+```{r,fig.align='center', echo=FALSE}
 # aggregate the data set by more than one factor
 d2 = abia  %>% filter(abia$CancellationCode != 0) %>%
   group_by(CancellationCode, DayOfWeek) %>%
@@ -176,7 +376,7 @@ ggplot(data = d2) +
   labs(x = "Weekday",y = "Avg # Cancelled Flights")
 ```
 In the graph below, we look at a similar trend but over months so we can look at a seasonal picture of the flights. Some interesting anomalies are found in April and September. Based on knowledge of seasonal changes in weather, one could conclude that the significant flux in weather delays in September could be explained by hurricane season. As for April, carrier delays could increased significantly because American Airlines canceled a lot of flights due to not meeting government regulation standards. 
-```{r,echo=FALSE}
+```{r,fig.align='center',echo=FALSE}
 # aggregate the data set by more than one factor
 d12 = abia %>% filter(abia$CancellationCode != 0) %>%
   group_by(CancellationCode, MonthName) %>%
@@ -208,7 +408,7 @@ ggplot(data = combo4) +
 
 ```
 Strategic planning is a fundamental component of how airports sustain themselves. Knowing that an airport or region is notorious for delays or that they are notorious for this seasonally, plans can be made to accommodate to yield the best options for travelers. A simple way to summarize this information in a plot is through geographical mapping. Figure ___ shows this; airports with larger volumes of flights arriving in or departing from Austin have larger and brighter circles. An airport official should show more concern for a large dot that is lightly shaded, as this airport has a lot of flights outgoing to the Austin airport so schedules in these airports are integral to an efficient airport.
-```{r,include=FALSE}
+```{r,fig.align='center',include=FALSE}
 library(splitstackshape)
 library(ggmap)
 # Load Data
@@ -264,12 +464,13 @@ densityOfArrivals <- abia %>% count(Origin)
 abia <- merge(abia, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
 ```
 
-```{r,echo=FALSE}
-##############################    GEO PLOT   ##############################
-#######################    DEPARTURES PER AIRPORT   ########################
-
+```{r,include=FALSE}
 # Mapping
 register_google(key = "AIzaSyDjF7I4JjprxlUM4ZFB_0AScyEME5HsI-s")
+```
+```{r,fig.align='center',echo=FALSE}
+##############################    GEO PLOT   ##############################
+#######################    DEPARTURES PER AIRPORT   ########################
 
 usa <- c(left = -125, bottom = 25.75, right = -67, top = 49)
 map <- get_stamenmap(bbox = usa, zoom = 4, maptype = "toner-lite")
@@ -297,7 +498,7 @@ ggmap(map) + geom_point(data=numArrivals, aes(x=longitude, y=latitude, color=Num
 
 ```
 Now that we have an understanding of where the most frequented airports are, we can now look at a similar map that tells us how timely these airports' flights are. Similar to the most frequented locations, in the graphs below we see the locations with the most airports still have larger circles, but lighter colors represent longer delays on average for the year. We know from previous graphs the length of delays is somewhat seasonal, but on average we see that the more frequented airports do not have relatively long delays. We actually notice in states like Iowa there is not a lot of flights from here but they have a significantly higher average length of delay. We see something similar for flights arriving in Tennessee. 
-```{r,echo=FALSE}
+```{r,fig.align='center',echo=FALSE}
 # Average Arrival Delays per Airport
 arrivalDealysPerAirport <- abia %>% filter(Origin != 'AUS') %>% 
   select(Origin, Origin_Longitude, Origin_Latitude, ArrDelay, Density_Arrivals) %>% 
@@ -325,6 +526,8 @@ ggmap(map) + geom_point(data=depatureDealysPerAirport, aes(x=longitude, y=latitu
 ```
 
 # Question 3
+Our group chose to construct a simple portfolio of three ETFs: iShares Core U.S. Aggregate Bond ETF (AGG), SPDR Gold Shares (GLD), Vanguard Growth Index Fund ETF Shares (VUG). We chose AGG because it is considered a relatively safe investment and would help mitigate the volatility of VUG. Additionally, we selected GLD, an ETF which tracks the price of Gold (~1/10) as Gold has been a hot commodity in the wake of COVID-19 and the expected rise in inflation rates. Figure 1 depicts the Cumulative Return, Daily Return, and Drawdown of each of the assets.
+
 ```{r}
 
 ```
