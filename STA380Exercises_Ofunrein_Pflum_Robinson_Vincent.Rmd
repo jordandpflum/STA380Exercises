@@ -6,14 +6,14 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,fig.width=5, fig.height=2)
 ```
 # Question 1
 ```{r,include=FALSE}
 
 ```
 # Question 2
-The figures below portray a story about the flights arriving in and departing from the Austin Bergstrom International Airport in 2008. We looked at traits of flights and airlines from a few different perspectives to convey an accurate image of what the airport and travelers experienced that year. 
+The figures below portray a story about the flights arriving in and departing from the Austin Bergstrom International Airport in 2008. We looked at traits of flights and airlines from a few different perspectives to convey an accurate image of what the airport and travelers experienced that year. This analysis of the data is extremely useful for a few different potential clients. Firstly, travelers are the sustenance of this industry and are impacted by the factors we are analyzing. By providing them with some of these graphs, travelers will be more informed about some things they are likely to experience temporally, geographically, or with a specific airline. Secondly, airport officials would benefit greatly from our analysis because it is advantageous to know what one is likely to experience with each airport. Airports are businesses with reputations and standards. Notoriety for delayed flights is very useful information for preparations and strategic planning. 
 ```{r,include=FALSE}
 library(magrittr)
 library(ggplot2)
@@ -124,7 +124,7 @@ summary(abia$DepDelay)
 n<- mean(popular.abia$DepDelay, na.rm=TRUE) #exclude NA from calculations 
 longDEPdelays <-popular.abia %>% filter(DepDelay > n)
 ```
-
+The line graph figures below are a time series analysis of how the length of flight delays changes throughout the year 2018. The graphs are relatively similar and have peaks during similar times. They are separated by arriving and departing flights, essentially whether the plane was late coming in or late coming out. It is to be expected that a change in one would impact an airport’s schedule thus resulting in changes in the other. For both graphs there are peaks in months like March, June, and December. It is easy to deduce the cause of that could be holidays or related to school schedules like Spring Break. For a more concrete picture further analysis should be conducted. The airlines graphed here have more flights than the average airline and the delays are considered long delays because they are in the 75th percentile. 
 ```{r, echo=FALSE} 
 ##############################    LINE GRAPHS   ##############################
 
@@ -154,7 +154,59 @@ ggplot(AvgDepDelay, aes(x=Month, y=avgDepDelay, group=Airline))+
   ylab("Average Departure Delay")
 #---------------------------------------------------------------------------------------END
 ```
-The line graph figures above are a time series analysis of how the length of flight delays changes throughout the year 2018. The graphs are relatively similar and have peaks during similar times. They are separated by arriving and departing flights, essentially whether the plane was late coming in or late coming out. It is to be expected that a change in one would impact an airport’s schedule thus resulting in changes in the other. For both graphs there are peaks in months like March, June, and December. It is easy to deduce the cause of that could be holidays or related to school schedules like Spring Break. For a more concrete picture further analysis should be conducted. The airlines graphed here have more flights than the average airline and the delays are considered long delays because they are in the 75th percentile. 
+As we transition our focus from how flights are delayed for longer periods of time seasonally, we can also look at the different types of cancellations and delays. The graph below enables us to compare three types of cancellation codes: Carrier, Weather, and NAS. This plot is clearly able to show that NAS delays do not account for many delays and truly do not compare to weather or carrier delays. 
+
+```{r, echo=FALSE}
+# aggregate the data set by more than one factor
+d2 = abia  %>% filter(abia$CancellationCode != 0) %>%
+  group_by(CancellationCode, DayOfWeek) %>%
+  summarize(numcancels=n()/52)
+
+# plot
+ggplot(data = d2) + 
+  geom_bar(mapping = aes(x=DayOfWeek, y=numcancels, fill=CancellationCode),
+           position="dodge", stat='identity') +
+  labs(x = "Weekday", fill = "Cancellation Code") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw() +
+  ggtitle("Average Number of Cancelled Flights by Weekday in 2008") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Weekday",y = "Avg # Cancelled Flights")
+```
+In the graph below, we look at a similar trend but over months so we can look at a seasonal picture of the flights. Some interesting anomalies are found in April and September. Based on knowledge of seasonal changes in weather, one could conclude that the significant flux in weather delays in September could be explained by hurricane season. As for April, carrier delays could increased significantly by **_______________**. 
+```{r,echo=FALSE}
+# aggregate the data set by more than one factor
+d12 = abia %>% filter(abia$CancellationCode != 0) %>%
+  group_by(CancellationCode, MonthName) %>%
+  summarize(numcancelled=n())
+
+d13 = abia %>%
+  group_by(MonthName) %>%
+  summarize(numflights=n(),.groups = 'drop') %>%
+  ungroup() %>%
+  arrange(desc(numflights))
+
+combo4 <-merge(x=d12,y=d13,by="MonthName",all.x=TRUE)
+combo4$cancperc <- combo4$numcancelled/combo4$numflights
+combo4$numcancelled <- NULL
+combo4$numflights <- NULL
+
+# plot
+ggplot(data = combo4) + 
+  geom_bar(mapping = aes(x=MonthName, y=cancperc, fill=CancellationCode),
+           position="dodge", stat='identity') +
+  labs(x = "Month", fill = "Cancellation Code") +
+  scale_fill_manual(values=cbPalette) +
+  theme_bw() +
+  ggtitle("Percent of Flights Cancelled by Month in 2008") +
+  # center plot title
+  theme(plot.title = element_text(hjust = 0.5))+
+  # add labels
+  labs(x = "2008",y = "% Flights Cancelled")
+
+```
+Strategic planning is a fundamental component of how airports sustain themselves. Knowing that an airport or region is notorious for delays or that they are notorious for this seasonally, plans can be made to accommodate to yield the best options for travelers. A simple way to summarize this information in a plot is through geographical mapping. Figure ___ shows this. An airport official should be concerned about a large dot that is lightly shaded, as this airport has a lot of flights outgoing to the Austin airport and are often delayed.
 ```{r}
 ##############################    GEO PLOT   ##############################
 
