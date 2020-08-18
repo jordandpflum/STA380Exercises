@@ -3,6 +3,7 @@ rm(list=ls())
 library(dplyr)
 library(klaR)
 
+
 social_marketing <- read.csv('social_marketing.csv')
 
 social_marketing_filtered <- social_marketing %>% filter(adult<=5) %>% dplyr::select(-spam)
