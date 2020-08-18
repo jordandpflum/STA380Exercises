@@ -94,6 +94,7 @@ for(x in df$article){
   }#end of for loop
 }#end of for loop
 ##################################################################
+
 articles <- c(df$article)
 df$sentence.count <- 0
 df$word.count <- 0
@@ -101,21 +102,28 @@ cnt <- 0
 for (x in 1:length(articles)){
   sentence<- str_replace_all(articles[x],pattern='\"',replacement = "")
   sentence<- str_replace_all(sentence,pattern='\n',replacement = "")
-  SENTENCE<- strsplit(sentence,".",fixed=TRUE)
-  for (y in 1:length(SENTENCE)){
-    s[y] <- nchar(strsplit(SENTENCE[y]," ",fixed=TRUE))
-    df$avg_sentencelength[x] <- mean(s)
-  }#end of for avg sentence length
+  #sentence<- str_replace_all(sentence,pattern='.',replacement = "")
+  #SENTENCE<- strsplit(sentence,".",fixed=TRUE)
   WORDS<- str_split(sentence," ")
   df$word.count[x] <- nchar(WORDS)
   
+}#end of for loop making article word count 
+##################################################################
+
+for (x in 1:length(articles)){
+  sentence<- str_replace_all(articles[x],pattern='\"',replacement = "")
+  sentence<- str_replace_all(sentence,pattern='\n',replacement = "")
+  SENTENCE<- strsplit(sentence,".",fixed=TRUE)
+  df$sentence.count[x] <- length(SENTENCE)
 }
-articles[3]
+
+
 
 
 sentence<- str_replace_all(articles[3],pattern='\"',replacement = "")
 sentence<- str_replace_all(sentence,pattern='\n',replacement = "")
-sentence<- strsplit(sentence,".",fixed=TRUE)
-sentence<- strsplit(sentence," ",fixed=TRUE)
-(sentence)
-sapply(sentence,length)
+SENTENCE<- strsplit(sentence,".",fixed=TRUE)
+
+SENTENCE
+
+
