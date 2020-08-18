@@ -4,7 +4,7 @@ article <- c(
 )
 
 str_split(fruits, " and ")
-
+x
 library(tidyverse)
 df <- read.csv("author_train.csv")
 
