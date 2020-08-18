@@ -3,14 +3,11 @@ rm(list=ls())
 library(dplyr)
 library(klaR)
 
-rm(list=ls())
-
-library(dplyr)
-
 social_marketing <- read.csv('social_marketing.csv')
 
 social_marketing_filtered <- social_marketing %>% filter(adult<=5) %>% dplyr::select(-spam)
 rownames(social_marketing_filtered) <- social_marketing_filtered$X
+
 
 ## find percentages of tweet types by each user
 total_col = apply(social_marketing_filtered[,-1], 1, sum)
@@ -18,13 +15,14 @@ pcts = lapply(social_marketing_filtered[,-1], function(x) {
   x / total_col
 })
 
+pcts$X = social_marketing_filtered$X
 
-#rank percentages 
-pcts_rank = lapply(pcts, rank)
+pcts = as.data.frame(pcts)
 
 
 #k-means cluster
-X = social_marketing_filtered[,-(1)]
+
+X = pcts[ , !(names(pcts) %in% c('X'))]
 
 
 X = scale(X, center=TRUE, scale=TRUE)
@@ -33,29 +31,34 @@ clusters <- kmeans(X, 6, nstart=25)
 mu = attr(X,"scaled:center")
 sigma = attr(X,"scaled:scale")
 
-clusters$center[1,]*sigma + mu
-clusters$center[2,]*sigma + mu
-clusters$center[4,]*sigma + mu
+cluster1 <- clusters$center[1,]*sigma + mu
+cluster2 <- clusters$center[2,]*sigma + mu
+cluster3 <- clusters$center[3,]*sigma + mu
+cluster4 <- clusters$center[4,]*sigma + mu
+cluster5 <- clusters$center[5,]*sigma + mu
+cluster6 <- clusters$center[6,]*sigma + mu
 
-social_marketing_filtered$clustered <- as.factor(clusters$cluster)
+#sort each cluster's values
+cluster1 <- as.data.frame(cluster1)
+cluster1$categories <- row.names(cluster1)
+cluster1[order(cluster1$cluster1, decreasing = TRUE),]
 
-str(clusters)
+cluster2 <- as.data.frame(cluster2)
+cluster2$categories <- row.names(cluster2)
+cluster2[order(cluster2$cluster2, decreasing = TRUE),]
 
-which(clusters$cluster == 1)
-which(clusters$cluster == 2)
+cluster3 <- as.data.frame(cluster3)
+cluster3$categories <- row.names(cluster3)
+cluster3[order(cluster3$cluster3, decreasing = TRUE),]
 
-#k++
-clusters2 <- kmeanspp(X, k=4, nstart=25)
+cluster4 <- as.data.frame(cluster4)
+cluster4$categories <- row.names(cluster4)
+cluster4[order(cluster4$cluster4, decreasing = TRUE),]
 
-which(clusters2$cluster == 1)
-which(clusters2$cluster == 2)
+cluster5 <- as.data.frame(cluster5)
+cluster5$categories <- row.names(cluster5)
+cluster5[order(cluster5$cluster5, decreasing = TRUE),]
 
-
-clusters$withinss
-clusters2$withinss
-sum(clusters$withinss)
-sum(clusters2$withinss)
-clusters$tot.withinss
-clusters2$tot.withinss
-clusters$betweenss
-clusters2$betweenss
+cluster6 <- as.data.frame(cluster6)
+cluster6$categories <- row.names(cluster6)
+cluster6[order(cluster6$cluster6, decreasing = TRUE),]
