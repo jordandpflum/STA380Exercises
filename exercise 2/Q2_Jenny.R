@@ -21,7 +21,7 @@ qplot(d3$CRSDepTime,
       xlab = "Time of Day (hhmm)", 
       ylab = "# of Delays",
       fill=I('blue'),
-      col=I("red"),
+      col=I("black"),
       alpha=I(.5))
 
 
