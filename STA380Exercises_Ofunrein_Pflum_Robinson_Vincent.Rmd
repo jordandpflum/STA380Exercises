@@ -10,7 +10,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width=5, fig.height=2.5)
 ```
-# Question 1 FIX
+# Question 1 DONE
 ```{r,include=FALSE}
 library(magrittr)
 # get rid of scientific notation
@@ -39,7 +39,7 @@ subset_Green <- subset_All %>% filter(green_rating==1)
 subset_Nongreen <- subset_All %>% filter(green_rating==0)
 ```
 Though potentially accurate in their findings, the conclusions of the initial analysis regarding the economic viability of “going green” were based on flawed logic.  The employee filtered out buildings with occupancy rates of less than ten percent, assuming that the occupancy rate for the new building will be over ten percent without providing evidence to support his theory.  To strengthen his argument, he could have used a visual like the one below, which shows the leasing rates by size for all of the buildings in the data set.  Based on this, it appears that there are in fact no ‘green’ buildings in the data set with leasing rates (aka occupancy rates) lower than 10%. 
-```{r}
+```{r,fig.align='center',echo=FALSE}
 #####################################################
 # plot leasing rate vs size, all data
 #####################################################
@@ -465,7 +465,7 @@ densityOfArrivals <- abia %>% count(Origin)
 abia <- merge(abia, densityOfArrivals, by='Origin') %>% rename('Density_Arrivals' = n)
 ```
 
-```{r,include=FALSE}
+```{r,fig.align='center',include=FALSE}
 # Mapping
 register_google(key = "AIzaSyDjF7I4JjprxlUM4ZFB_0AScyEME5HsI-s")
 ```
@@ -633,15 +633,15 @@ adjClosePrices <- adjClosePrices[apply(adjClosePrices,1,function(x) all(!is.na(x
 #returns <- as.timeSeries((tail(adjClosePrices,-1) / as.numeric(head(adjClosePrices,-1)))-1)
 market_returns <- Return.calculate(adjClosePrices)[-1,]
 ```
-```{r}
+```{r,echo=FALSE}
 charts.PerformanceSummary(returns,main='Portfolio Assets Summary', rf=.0071)
 ```
 The top chart unsurprisingly shows that VUG has the highest cumulative return over the past five years (as it is the most risky investment of the three) and AGG as the lowest. However, it is also apparent that GLD has high returns in the past 6 months and nears the cumulative return of VUG. The bottom graph depicts the drawdown for every asset during each period. The drawdown of an asset refers to how much an investment or trading account is down from the peak before it recovers back to the peak. Therefore, it is generally a good measure of the negative risk of an asset.
-```{r}
+```{r,echo=FALSE}
 chart.RiskReturnScatter(returns, add.sharpe = TRUE, Rf=.0071)
 ```
 Figure 1 does not do the best job of displaying the return of an asset in respect to the risk taken on. Therefore, Figure 2 plots the annualized return for every asset vs annualized risk (SD). You can see that VUG has the highest risk of all three assets but the also the highest return. One last graph that is useful to examine is each of the assets relative performance to the market. To simplify things, we used SPY, and ETF that track the S&P500, as our market proxy. Figure 3 shows each of the assets performance relative to SPY. If SPY were graphed, it would be a horizontal line intersection the y-axis at 1. Therefore, whenever an asset is above 1, they are performing better than the market.
-```{r}
+```{r,echo=FALSE}
 chart.RelativePerformance(apply.weekly(returns, Return.cumulative), apply.weekly(market_returns, Return.cumulative), legend.loc='topright')
 
 ```
@@ -740,12 +740,120 @@ Portfolio 3 & 1105 & 3081 & -4022 \\
 ```{r}
 
 ```
-# Question 6
+# Question 6 DONE
+Initial exploration of the grocery dataset reveals that the top three most frequently purchased items are whole milk, other vegetables, and rolls/buns.  The top twenty most frequently purchased items are shown in the figure below.  The list includes common pantry and fridge staples you would expect to see in most grocery carts, such as milk, dairy products, fruit and vegetables, soda and beer, bread, juice, and eggs.   
+```{r,include=FALSE}
+library(tinytex)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(png)
+library(arules)
+library(arulesViz)
 
+# read transactions
+groceries <- read.transactions("groceries.txt", format = "basket", sep = ",")
+groceries_df <- as(groceries, "data.frame") 
+# see dimensions
+dim(groceries)
+# see basic summary
+summary(groceries)
+# see the first 10 transactions
+arules::inspect(groceries[1:10])
+# see the number of items in first 20 transactions
+size(groceries[1:20])
+# see list of item labels
+itemLabels(groceries)
+```
 ```{r}
+# plot most frequently sold items
+itemFrequencyGGPlot <- function(x, topN) {
+  x %>%
+    itemFrequency %>%
+    sort %>%
+    tail(topN) %>%
+    as.data.frame %>%
+    tibble::rownames_to_column() %>%
+    ggplot(aes(reorder(rowname, `.`),`.`)) + 
+    theme_bw() +
+    geom_col(fill="#F05483") + 
+    coord_flip() +
+    labs(y="Frequency", x ="Item", title = "Most Frequently Purchased Grocery Items") +
+    theme(plot.title = element_text(hjust = 0.5))
+}  
+
+itemFrequencyGGPlot(groceries, topN=20)
+```
+On the other end, the least frequently purchased items include a lot of non-food items, including toiletries (hairspray, makeup remover), cleaning and organization products (rubbing alcohol, toilet cleaner, bags), and baby products (baby food and baby cosmetics).  
+```{r,echo=FALSE}
+# plot least purchased items
+itemFrequencyGGPlot <- function(x, topN) {
+  x %>%
+    itemFrequency %>%
+    sort %>%
+    head(topN) %>%
+    as.data.frame %>%
+    tibble::rownames_to_column() %>%
+    ggplot(aes(reorder(rowname, `.`),`.`)) + 
+    theme_bw() +
+    geom_col(fill="#FFAAC4") + 
+    coord_flip() +
+    labs(y="Frequency", x ="Item", title = "Least Frequently Purchased Grocery Items") +
+    theme(plot.title = element_text(hjust = 0.5))
+}  
+
+itemFrequencyGGPlot(groceries, topN=20)
+```
+Looking at the association rules with the highest support, we see that some of the most popular items are also the items most frequently purchased together, which makes sense.  For example, whole milk and other vegetables were purchased together in 7.5% percent of all transactions, the highest of any pair of items.  In fact, the majority of rules with high support include whole milk or other vegetables.  The other two combinations of items included in at least 5% of shoppers’ carts include whole milk and rolls/buns, and whole milk with yogurt.  As one would expect, the rules with the highest support were those that involved only two items, with support decreasing and confidence increasing as the order of magnitude went up.
+```{r,include=FALSE}
+##########################################################
+# APRIORI
+##########################################################
+
+# Which groups of items are most frequently purchased together? (highest support)
+# apriori alogrithm (support 5%)
+grocRules <- apriori(groceries, parameter = list(supp = 0.05, conf = .0001, minlen=2, maxlen=5))
+grocRulesDF <- as(grocRules, "data.frame") 
+grocRulesDF[order(grocRulesDF$support, decreasing=TRUE), ] 
+
+# Which groups of items have the highest lift?
+# apriori alogrithm
+grocRules <- apriori(groceries, parameter = list(supp = 0.001, conf = .001, minlen=2, maxlen=5))
+grocRulesDF <- as(grocRules, "data.frame") 
+grocRulesDF[order(grocRulesDF$lift, decreasing=TRUE)[0:20], ] 
+
+# Interesting rules - which ones have higher confidence and higher lift
+# apriori alogrithm
+grocRulesInt <- apriori(groceries, parameter = list(supp = 0.001, conf = .5, minlen=2, maxlen=5))
+inspect(sort(subset(grocRulesInt,subset = lift > 2,by = 'support',decreasing = T)))
+
+# Interesting rules - without whole milk and other vegetables?
+# apriori alogrithm
+grocRulesInt2 <- apriori(groceries, parameter = list(supp = 0.0015, conf = .5, minlen=2, maxlen=5))
+inspect(sort(subset(grocRulesInt2,subset=!(rhs %in% c('whole milk','other vegetables')) & lift > 3,by = 'support',decreasing = T)))
+```
+```{r,echo=FALSE}
+plot(grocRules, method='two-key plot')
+
+```
+When looking for interesting rules, we set a confidence minimum of 0.5 (in order to find rules that were correct for at least half of transactions containing the combination of items).  Since a lift of 1 implies that the pair of items are independent of one another, we also initially filtered on a lift value of 2 to give a minimum confidence that was at least twice what we would expect to see from items that were independent from one another.  A lot of the rules generated had whole milk and other vegetables as the antecedents, which makes sense given that they are the top two selling items.  To get an idea of other interesting rules that involved less popular items, we then filtered out rules that had those two products as antecedents.  
+
+After applying these filters, there were still a lot of rules.  To narrow these down further, additional tuning was applied: support was set to 0.0015 and the lift was increased to 3.  The resulting list included some expected rules and others that were surprising.  For example, there are a lot of rules that included root or other vegetables with things like herbs, beef, butter, rice, onions, rolls - all things that are typically dinner mainstays and often cooked together as well.  One rule was that liquor and red wine are associated with bottled beer, and this rule had a lower support but comparatively high confidence and lift (90% confidence, lift of 11), which makes sense - all three items are usually purchased if someone is throwing a party, but parties themselves are not a weekly occurrence for most people.  Some other party pairings also had higher lifts, including instant food products/soda/hamburger meat and popcorn/soda/salty snacks.  This information could be used to put together end caps with common party foods or to offer coupons targeted at party hosters.
+```{r,echo=FALSE}
+plot(grocRulesInt2, measure = c("support", "lift"), shading = "confidence")
 
 ```
 
+
+There were also some interesting rules that were less intuitive.  One such combination included cream cheese, root vegetables, and yogurt (found in 38 transactions).  Yet another surprising combination included beef, waffles, and root vegetables.  Another rule demonstrated that curd and tropical fruit were purchased with yogurt in 52 transactions, and 51% of the time when the first two were purchased so was yogurt.  With a lift of 3.69, we can be almost 4 times as confident that a customer will purchase yogurt knowing that they purchased curd and tropical fruit.  After researching, it appears those three items can be used to make homemade flavored yogurt as well as certain types of desserts, so it makes sense that they would be purchased together, but it is surprising that the combination appears as frequently as it does.  Based on this insight, one recommendation could be to set up a tasting/demonstration station that shows customers how to create their own yogurt and offers samples for them to try.
+
+After graphing the top 1k interesting rules to show degree centrality, betweenness, and modularity, it was interesting to see that whole milk (the most frequently purchased item and one that appears in many rules) had a much lower degree of betweenness than other products such as yogurt, fruit, and vegetables.  
+
+```{r, out.width="0.3\\linewidth", include=TRUE, fig.align="center", echo=FALSE}
+knitr::include_graphics("gephiGrocery.pdf")
+
+
+```
 
 
 
