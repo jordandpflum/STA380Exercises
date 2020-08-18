@@ -526,7 +526,7 @@ ggmap(map) + geom_point(data=depatureDealysPerAirport, aes(x=longitude, y=latitu
 ########## Add Jenny's Graphs#######################################
 ```
 
-# Question 3
+# Question 3 DONE
 Our group chose to construct a simple portfolio of three ETFs: iShares Core U.S. Aggregate Bond ETF (AGG), SPDR Gold Shares (GLD), Vanguard Growth Index Fund ETF Shares (VUG). We chose AGG because it is considered a relatively safe investment and would help mitigate the volatility of VUG. Additionally, we selected GLD, an ETF which tracks the price of Gold (~1/10) as Gold has been a hot commodity in the wake of COVID-19 and the expected rise in inflation rates. Figure 1 depicts the Cumulative Return, Daily Return, and Drawdown of each of the assets.
 ```{r, include=FALSE}
 #rm(list=ls())
@@ -683,10 +683,55 @@ Portfolio 3 & 1.11 & 3.08 & 0.356 & -4.033\\
 The table does a nice job of summarizing the portfolios. Portfolio 1, which is the safest of the three, has the lowest return and the lowest VaR. However, although Portfolio 2 has a higher return than portfolio 3, it has a much higher risk and VaR than Portfolio 3 and therefore a considerably lower Sharpe Ratio. Because Portfolio 3 was optimized, it had a much better relative performance than Portfolio 2.
 
 
-```{r}
+```{r,echo=FALSE}
+#### Graphing ####
+# Returns
+port1_monthly = apply.weekly(port1_returns, Return.cumulative)
+port1 <- data.frame(port1_monthly)
+port1$portfolio <- 'Portfolio 1'
 
+port2_monthly = apply.weekly(port2_returns, Return.cumulative)
+port2 <- data.frame(port2_monthly)
+port2$portfolio <- 'Portfolio 2'
+
+port3_monthly = apply.weekly(port3_returns, Return.cumulative)
+port3 <- data.frame(port3_monthly)
+port3$portfolio <- 'Portfolio 3'
+
+portfolioReturns <- rbind(port1, port2, port3)
+
+# Portfolio VaRs
+port1_VaR <- data.frame(PortfolioVaR=port1_montlyVaR)
+port1_VaR$portfolio <- 'Portfolio 1'
+
+port2_VaR <- data.frame(PortfolioVaR=port2_montlyVaR)
+port2_VaR$portfolio <- 'Portfolio 2'
+
+port3_VaR <- data.frame(PortfolioVaR=port3_montlyVaR)
+port3_VaR$portfolio <- 'Portfolio 3'
+
+portfolioVaRs <- rbind(port1_VaR, port2_VaR, port3_VaR)
+
+
+ggplot(portfolioReturns, aes(portfolio.returns, fill = portfolio)) + 
+  geom_density(alpha = 0.2) + 
+  geom_vline(data=portfolioVaRs, aes(xintercept=PortfolioVaR, color = portfolio), linetype="dashed") + 
+  ggtitle("Historical Returns (Monthly) vs VaR") +
+  xlab("Returns")
 ```
+Figure 4 does a good job of illustrating the table information. With little risk, Portfolio 1’s distribution is skinny and high, indicating narrow but consistent returns. However, although Portfolio 2’s and 3’s returns are very similar, Portfolio 2’s risk and VaR are a lot lower. This can most noticeably be seen in the levels of VaR (plotted as dashed vertical lines). The interpretation of the VaR line is simple: 
 
+\newline VaR(95) = -4.033 → Your portfolio has a 5 percent chance of losing 4.033 percent or more in a given month.
+
+\newline It is also useful to translate our portfolio to dollars. Let's assume that we have 100,000 dollars to invest in our portfolio. Table 3 shows the monthly Expected Return, Risk, and VaR of each portfolio. For example, in any given month, our portfolio (3) would be expected to grow on average 1,105 dollars. We would be 95% confident that it would grow within the range of -5057 dollars and 7,267 dollars. Finally, we would expect there to be a 5% chance that we would lose 4,022 dollars in any given month.
+
+$$\begin{array}{cccc}
+\boldsymbol{Portfolio} & \boldsymbol{Return (Dollars)} & \boldsymbol{Risk (Dollars)}& \boldsymbol{VaR (Dollars)}\\
+Portfolio 1 & 498 & 1384 & -1686 \\
+Portfolio 2 & 1178 & 4045 & -5587 \\
+Portfolio 3 & 1105 & 3081 & -4022 \\
+
+\end{array}$$
 # Question 4
 ```{r}
 
