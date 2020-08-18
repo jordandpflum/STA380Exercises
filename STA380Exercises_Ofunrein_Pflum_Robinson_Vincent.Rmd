@@ -811,10 +811,150 @@ It is also useful to translate our portfolio to dollars. Let's assume that we ha
 
 
 # Question 4
-```{r}
+After performing K-means clustering on the Social Marketing dataset and subsetting the customers into 6 segments, we got the following top categories for each segment:
+Segment 1: Sports fandom, religion, and food
+	The members of this group are likely adults with families.
+Segment 2: College, online gaming, photo sharing (excluding chatter)
+	This customer segment likely represents college students or teenagers.
+Segment 3: Cooking, fashion, photo sharing
+	This group majority is most likely young to middle-aged women.
+Segment 4: Politics, news, travel
+	This customer group likely represents educated, middle-aged or older men and women.
+Segment 5: Chatter, photo sharing, current events (including chatter because it is top rated)
+	This group likely contains teenagers and young adults.
+Segment 6: Health nutrition, personal fitness, cooking (excluding chatter)
+	The members of this group are clearly invested in health and fitness lifestyles.
 
+In addition to performing K-Means clustering, we also implemented PCA to see if any more information could be gathered about classifying the twitter users.
+
+```{r, include=FALSE}
+social_marketing <- read.csv('social_marketing.csv')
+
+social_marketing_filtered <- social_marketing %>% filter(adult<=5) %>% dplyr::select(-spam)
+rownames(social_marketing_filtered) <- social_marketing_filtered$X
+
+
+## find percentages of tweet types by each user
+total_col = apply(social_marketing_filtered[,-1], 1, sum)
+pcts = lapply(social_marketing_filtered[,-1], function(x) {
+  x / total_col
+})
+
+pcts$X = social_marketing_filtered$X
+
+pcts = as.data.frame(pcts)
+
+
+#k-means cluster
+
+X = pcts[ , !(names(pcts) %in% c('X'))]
+
+
+X = scale(X, center=TRUE, scale=TRUE)
+clusters <- kmeans(X, 6, nstart=25)
+
+mu = attr(X,"scaled:center")
+sigma = attr(X,"scaled:scale")
+
+cluster1 <- clusters$center[1,]*sigma + mu
+cluster2 <- clusters$center[2,]*sigma + mu
+cluster3 <- clusters$center[3,]*sigma + mu
+cluster4 <- clusters$center[4,]*sigma + mu
+cluster5 <- clusters$center[5,]*sigma + mu
+cluster6 <- clusters$center[6,]*sigma + mu
+
+#sort each cluster's values
+cluster1 <- as.data.frame(cluster1)
+cluster1$categories <- row.names(cluster1)
+cluster1[order(cluster1$cluster1, decreasing = TRUE),]
+
+cluster2 <- as.data.frame(cluster2)
+cluster2$categories <- row.names(cluster2)
+cluster2[order(cluster2$cluster2, decreasing = TRUE),]
+
+cluster3 <- as.data.frame(cluster3)
+cluster3$categories <- row.names(cluster3)
+cluster3[order(cluster3$cluster3, decreasing = TRUE),]
+
+cluster4 <- as.data.frame(cluster4)
+cluster4$categories <- row.names(cluster4)
+cluster4[order(cluster4$cluster4, decreasing = TRUE),]
+
+cluster5 <- as.data.frame(cluster5)
+cluster5$categories <- row.names(cluster5)
+cluster5[order(cluster5$cluster5, decreasing = TRUE),]
+
+cluster6 <- as.data.frame(cluster6)
+cluster6$categories <- row.names(cluster6)
+cluster6[order(cluster6$cluster6, decreasing = TRUE),]
 ```
+```{r,fig.align='center',echo=FALSE}
+library(dplyr)
+library(factoextra)
+library(ggfortify)
+library(ggplot2)
+library(magrittr)
+social_marketing <- read.csv('social_marketing.csv')
+social_marketing_filtered <- social_marketing %>% filter(adult<=5) %>% dplyr::select(-spam)
+rownames(social_marketing_filtered) <- social_marketing_filtered$X
+## find percentages of tweet types by each user
+total_col = apply(social_marketing_filtered[,-1], 1, sum)
+pcts = lapply(social_marketing_filtered[,-1], function(x) {
+  x / total_col
+})
+pcts$X = social_marketing_filtered$X
+pcts = as.data.frame(pcts)
+#rank percentages
+#pcts_rank = lapply(pcts, rank)
+#k-means cluster
+X = pcts[ , !(names(pcts) %in% c('X'))]
+res.pca = prcomp(X, scale = FALSE)
+fviz_eig(res.pca, addlabels = TRUE)
+```
+Because the first 10 principal components were only able to capture 73 percent of the variation, we decided to keep all 10 principal components. However, the first two principal components were the most interesting. Thus, we constructed a correlation circle to analyze the relationship of variable between the first two principal components.
+```{r,fig.align='center',echo=FALSE}
+# Eigenvalues
+eig.val <- get_eigenvalue(res.pca)
+#eig.val
+# Results for Variables
+res.var <- get_pca_var(res.pca)
+#res.var$coord # Coordinates
+#res.var$contrib # Contributions to the PCs
+#res.var$cos2 # Quality of representation
+# Results for individuals
+#res.ind <- get_pca_ind(res.pca)
+#res.ind$coord # Coordinates
+#res.ind$contrib # Contributions to the PCs
+#res.ind$cos2 # Quality of representation
+#autoplot(res.pca)
+#princomp(X, cor = FALSE, scores = TRUE)
+#X = scale(X, center=TRUE, scale=TRUE)
+fviz_pca_var(res.pca, col.var = "black")
+```
+Although many variable have little to no correlation with each other, a few stand out. We can see that politics and College_uni are negatively correlated with personal fitness, nutrition, aand outdoors. Therefore, we could speculate that users who primarily tweet about politics and college uni are generally adverse to nutrition information of personal fitness tweets. 
+
+Principal Components turned out not to be the best method for categorizing tweets. As seen in the plot of the first 10 PC and their cos2 values (quality of representation of variables on factor map), most of the variables do not score highly. A low cos2 value would mean that the variable is not perfectly represented in their respective Principal Component. The graph shows that in the first principal component, only chatter and health nutrition seem to be important. The same goes for the second principal component. Therefore, the use of Principal Components in this specific dataset is not particularly helpful.
+```{r}
+library("corrplot")
+corrplot(res.var$cos2[,1:10], is.corr=FALSE)
+```
+
 # Question 5
+The goal of the project was to build a predictive model that accurately identifies the author of a given article.  The data used in the analysis includes a training folder containing 50 articles from each of 50 different authors, as well as a testing folder with a similar number of articles from the same authors.  The information in the training folder was used to train the models, which were then used to predict authors in the testing folders.  
+
+The original data was in the form of txt files (one for each article), which were grouped together in folders by author.  In order to make this data usable, we wrote a function to read in one txt file per line, which gave us a matrix of 2500 rows, with each cell containing the entirety of one article.  We then created a dataframe for the training and testing sets, each containing roughly 2500 rows and two columns for author name and article.  An additional column was added to denote the article number (1-2500).  
+
+With the goal of doing text analysis on the articles, each article was split into individual words, resulting in a dataframe that had columns for article number, author, word, and the number of times that word appeared in the article.  Believing that sentiment analysis could be useful for predicting an author, we also utilized the Afinn library to assign sentiment values to each word.  The Afinn lexicon assigns words with a score from -5 to 5, with -5 indicating strong negative sentiment and 5 indicating strong positive sentiment.  A column with sentiment value was added to the existing dataframe broken out by word count.  
+
+The data frame was then grouped by article number, author, and word, and transposed using melt and dcast in order to set the word counts as columns that could then be used as variables.  The column headers for the resulting data frame were the article number, author, and individual words (eg “word_abandoned”, “word_abducted”) and the total count of instances of each word in a given article.  Since there were missing values after this restructuring, they were replaced with counts of zero.
+
+We then utilized the sentiment scores to determine the total positive and negative ‘scores’ for each article, which was calculated by multiplying the sentiment score of a word by the number of instances of that word in an article.  All of the positive scores for an article were then added together, as well as the negative scores, to create two new columns.  For example, if an article contained the word ‘love’ twice and ‘happiness’ once, and the sentiment score for those two words were 5 and 3, then the positive score for that article would be (2 instances of ‘love’ x 5 score) + (1 instance of ‘happiness’ x 3 score) = 13 total positive score.    
+
+Taking into account the ‘new’ words that would be seen in the testing data, we took the existing dataframe (which had almost 1500 columns) and counted the total number of instances of each word (across all articles).  We then filtered the training data to include only the top 1000 words by count (in addition to the article number, author, and total positive and negative scores).  An additional column was added with a tally of the ‘other words’ - those that were not in the top 1000 words.  This ‘other words’ bucket could then be utilized for the testing set to account for words in those articles that did not fall into the top 1000 words from the testing set.  
+
+PCA was a logical choice to reduce dimensionality, as there were still just over 1000 columns after all of the data cleaning and data wrangling.  The values in the dataset were normalized before running PCA.  Interestingly, the first principal component appeared to be divided into observations that were marked by high counts of achievement words on one end (eg ‘growth’, ‘boost’, ‘competitive’, ‘assets’) and high counts of crime words on the other end (eg ‘crime’, ‘detained’, ‘penalty’, ‘sentenced’, ‘harsh’).  
+
+After running PCA, various classification models were trained on the data, including logistic regression, decision tree, random forest, gradient boosting (GBM), and kNN. 
 ```{r}
 
 ```
