@@ -416,6 +416,41 @@ ggplot(data = combo4) +
   labs(x = "2008",y = "% Flights Cancelled")
 
 ```
+For personal planning, I would be helpful to know what time of day there are long delays or irrgularities with flights. We used our data to generate the graph below and interpret whether time of day is truly significant in planning. These graphs are a picture of all states as well as arriving and departing flights so there is likely a lot of noise, but it is still helpful to see the occasions where there are abnormally long flight delays. The histogram below shows the number of delayed flights during the average day while the scatter plot shows how long these delays are relative to time of day. 
+```{r,include=FALSE}
+library(mosaic)
+library(dplyr)
+library(readr)
+airport <- read.csv("ABIA.csv",header=T, na.strings=c("",NA))
+airlinecodes <- read.csv("airline_codes.csv")
+abia <- airport %>% left_join(airlinecodes,by="UniqueCarrier")
+
+```
+```{r,fig.align='center',echo=FALSE}
+d3 = abia  %>% filter(DepDelay >=30) %>%
+  group_by(CRSDepTime) %>%
+  summarize(Frequency=n())
+
+
+qplot(d3$CRSDepTime,
+      geom="histogram",
+      binwidth = 50,  
+      main = "Delay Frequency Based on Time of Day", 
+      xlab = "Time of Day (hhmm)", 
+      ylab = "# of Delays",
+      fill=I('blue'),
+      col=I("black"),
+      alpha=I(.5))
+d4 = abia  %>% filter(DepDelay >=30) %>%
+  group_by(CRSDepTime) %>%
+  summarize(DepDelay)
+
+d4.glm <- glm(cbind(DepDelay, 875 - DepDelay) ~ CRSDepTime, 
+                    data=d4, family=binomial(logit))
+
+plot(DepDelay ~ CRSDepTime, data=d4, main='Depature Delay Length Based on Time of Day', xlab='Time of Day (hhmm0', ylab='Departure Delay Time')
+
+```
 Strategic planning is a fundamental component of how airports sustain themselves. Knowing that an airport or region is notorious for delays or that they are notorious for this seasonally, plans can be made to accommodate to yield the best options for travelers. A simple way to summarize this information in a plot is through geographical mapping. Figure ___ shows this; airports with larger volumes of flights arriving in or departing from Austin have larger and brighter circles. An airport official should show more concern for a large dot that is lightly shaded, as this airport has a lot of flights outgoing to the Austin airport so schedules in these airports are integral to an efficient airport.
 ```{r,include=FALSE}
 library(splitstackshape)
