@@ -117,13 +117,15 @@ for (x in 1:length(articles)){
   df$sentence.count[x] <- length(SENTENCE)
 }
 
-
+w <- function(s){
+  
+}
 
 
 sentence<- str_replace_all(articles[3],pattern='\"',replacement = "")
 sentence<- str_replace_all(sentence,pattern='\n',replacement = "")
 SENTENCE<- strsplit(sentence,".",fixed=TRUE)
 
-SENTENCE
+SENTENCE[[1]][1]
 
 
