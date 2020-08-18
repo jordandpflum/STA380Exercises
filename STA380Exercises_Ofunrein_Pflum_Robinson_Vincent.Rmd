@@ -888,56 +888,13 @@ cluster6 <- as.data.frame(cluster6)
 cluster6$categories <- row.names(cluster6)
 cluster6[order(cluster6$cluster6, decreasing = TRUE),]
 ```
-```{r,fig.align='center',echo=FALSE}
-library(dplyr)
-library(factoextra)
-library(ggfortify)
-library(ggplot2)
-library(magrittr)
-social_marketing <- read.csv('social_marketing.csv')
-social_marketing_filtered <- social_marketing %>% filter(adult<=5) %>% dplyr::select(-spam)
-rownames(social_marketing_filtered) <- social_marketing_filtered$X
-## find percentages of tweet types by each user
-total_col = apply(social_marketing_filtered[,-1], 1, sum)
-pcts = lapply(social_marketing_filtered[,-1], function(x) {
-  x / total_col
-})
-pcts$X = social_marketing_filtered$X
-pcts = as.data.frame(pcts)
-#rank percentages
-#pcts_rank = lapply(pcts, rank)
-#k-means cluster
-X = pcts[ , !(names(pcts) %in% c('X'))]
-res.pca = prcomp(X, scale = FALSE)
-fviz_eig(res.pca, addlabels = TRUE)
-```
+![Bar Chart](barchart.png)
 Because the first 10 principal components were only able to capture 73 percent of the variation, we decided to keep all 10 principal components. However, the first two principal components were the most interesting. Thus, we constructed a correlation circle to analyze the relationship of variable between the first two principal components.
-```{r,fig.align='center',echo=FALSE}
-# Eigenvalues
-eig.val <- get_eigenvalue(res.pca)
-#eig.val
-# Results for Variables
-res.var <- get_pca_var(res.pca)
-#res.var$coord # Coordinates
-#res.var$contrib # Contributions to the PCs
-#res.var$cos2 # Quality of representation
-# Results for individuals
-#res.ind <- get_pca_ind(res.pca)
-#res.ind$coord # Coordinates
-#res.ind$contrib # Contributions to the PCs
-#res.ind$cos2 # Quality of representation
-#autoplot(res.pca)
-#princomp(X, cor = FALSE, scores = TRUE)
-#X = scale(X, center=TRUE, scale=TRUE)
-fviz_pca_var(res.pca, col.var = "black")
-```
+![Scatter Plot](scatter.png)
 Although many variable have little to no correlation with each other, a few stand out. We can see that politics and College_uni are negatively correlated with personal fitness, nutrition, aand outdoors. Therefore, we could speculate that users who primarily tweet about politics and college uni are generally adverse to nutrition information of personal fitness tweets. 
 
 Principal Components turned out not to be the best method for categorizing tweets. As seen in the plot of the first 10 PC and their cos2 values (quality of representation of variables on factor map), most of the variables do not score highly. A low cos2 value would mean that the variable is not perfectly represented in their respective Principal Component. The graph shows that in the first principal component, only chatter and health nutrition seem to be important. The same goes for the second principal component. Therefore, the use of Principal Components in this specific dataset is not particularly helpful.
-```{r}
-library("corrplot")
-corrplot(res.var$cos2[,1:10], is.corr=FALSE)
-```
+![Correlation Matrix](cor.png)
 
 # Question 5
 The goal of the project was to build a predictive model that accurately identifies the author of a given article.  The data used in the analysis includes a training folder containing 50 articles from each of 50 different authors, as well as a testing folder with a similar number of articles from the same authors.  The information in the training folder was used to train the models, which were then used to predict authors in the testing folders.  
